@@ -1,12 +1,18 @@
 import process from "node:process";
 
 // TODO: Add more CDNs
+/** The CDN that the cache headers are being used with. WIll work with other CDNs, but may miss platform-specific headers and directives. */
 export type CDN = "netlify";
 
+/** Number of seconds in one minute */
 export const ONE_MINUTE = 60;
+/** Number of seconds in one hour */
 export const ONE_HOUR = 3600;
+/** Number of seconds in one day */
 export const ONE_DAY = 86400;
+/** Number of seconds in one week */
 export const ONE_WEEK = 604800;
+/** Number of seconds in one year */
 export const ONE_YEAR = 31536000;
 
 // The tiered directive is used by Netlify to indicate that it should use a tiered cache, with a central cache shared by all edge nodes.
@@ -22,7 +28,7 @@ function detectCDN(): CDN | undefined {
   return undefined;
 }
 
-export function parseCacheControlHeader(
+function parseCacheControlHeader(
   header?: string | null,
 ): Record<string, string> {
   if (!header) {
@@ -38,7 +44,7 @@ export function parseCacheControlHeader(
   );
 }
 
-export function serializeCacheControlHeader(
+function serializeCacheControlHeader(
   directives: Record<string, string>,
 ): string {
   return Object.entries(directives)
@@ -54,60 +60,6 @@ export class CacheHeaders extends Headers {
   public constructor(init?: HeadersInit) {
     super(init);
     this.#cdn = detectCDN();
-  }
-
-  public get cacheTagHeaderName(): string {
-    switch (this.#cdn) {
-      case "netlify":
-        return "Netlify-Cache-Tag";
-      default:
-        return "Cache-Tag";
-    }
-  }
-
-  public get cdnCacheControlHeaderName(): string {
-    switch (this.#cdn) {
-      case "netlify":
-        return "Netlify-CDN-Cache-Control";
-      default:
-        return "CDN-Cache-Control";
-    }
-  }
-
-  /**
-   * The parsed cache-control header for the CDN cache.
-   */
-  public getCdnCacheControl(): Record<string, string> {
-    return parseCacheControlHeader(this.get(this.cdnCacheControlHeaderName));
-  }
-  public setCdnCacheControl(directives: Record<string, string>): void {
-    this.set(
-      this.cdnCacheControlHeaderName,
-      serializeCacheControlHeader(directives),
-    );
-  }
-
-  /**
-   * The parsed cache-control header for the browser cache.
-   */
-  public getCacheControl(): Record<string, string> {
-    return parseCacheControlHeader(this.get("Cache-Control"));
-  }
-
-  public setCacheControl(directives: Record<string, string>): void {
-    this.set("Cache-Control", serializeCacheControlHeader(directives));
-  }
-
-  /**
-   * The parsed content of the cache tags header.
-   */
-
-  public setCacheTags(tags: Array<string>): void {
-    this.set(this.cacheTagHeaderName, tags.join(","));
-  }
-
-  public getCacheTags(): Array<string> {
-    return this.get(this.cacheTagHeaderName)?.split(",") ?? [];
   }
 
   /**
@@ -146,15 +98,15 @@ export class CacheHeaders extends Headers {
    * Sets cache headers for content that should be cached for a long time, but can be revalidated.
    * The CDN cache will cache the content for the specified time, but the browser will always revalidate
    * the cache with the server to ensure that the content is up to date.
-   * @param value The number of seconds to set the CDN cache-control s-maxage directive to. Defaults to 1 year.
+   * @param ttl The number of seconds to set the CDN cache-control s-maxage directive to. Defaults to 1 year.
    */
 
-  revalidatable(value: number = ONE_YEAR): this {
+  revalidatable(ttl: number = ONE_YEAR): this {
     const cdnDirectives = parseCacheControlHeader(
       this.get(this.cdnCacheControlHeaderName),
     );
     cdnDirectives.public = "";
-    cdnDirectives["s-maxage"] = value.toString();
+    cdnDirectives["s-maxage"] = ttl.toString();
     cdnDirectives["must-revalidate"] = "";
     if (this.#cdn === "netlify") {
       cdnDirectives[tieredDirective] = "";
@@ -198,10 +150,79 @@ export class CacheHeaders extends Headers {
   }
 
   /**
+   * Sets the s-maxage for items in the CDN cache. This is the maximum amount of time that the CDN will cache the content.
+   * If used with swr, the content will revalidate in the background after the max age has passed. Otherwise, the content will be
+   * removed from the cache after the max age has passed.
+   */
+
+  ttl(value: number): this {
+    const cdnDirectives = this.getCdnCacheControl();
+    cdnDirectives["s-maxage"] = value.toString();
+    if (this.#cdn === "netlify") {
+      cdnDirectives[tieredDirective] = "";
+    }
+    this.setCdnCacheControl(cdnDirectives);
+    return this;
+  }
+
+  /**
    * Returns the headers as a plain object.
    */
 
   toObject(): Record<string, string> {
     return Object.fromEntries(this.entries());
+  }
+
+  private get cacheTagHeaderName(): string {
+    switch (this.#cdn) {
+      case "netlify":
+        return "Netlify-Cache-Tag";
+      default:
+        return "Cache-Tag";
+    }
+  }
+
+  private get cdnCacheControlHeaderName(): string {
+    switch (this.#cdn) {
+      case "netlify":
+        return "Netlify-CDN-Cache-Control";
+      default:
+        return "CDN-Cache-Control";
+    }
+  }
+
+  /**
+   * The parsed cache-control header for the CDN cache.
+   */
+  public getCdnCacheControl(): Record<string, string> {
+    return parseCacheControlHeader(this.get(this.cdnCacheControlHeaderName));
+  }
+  public setCdnCacheControl(directives: Record<string, string>): void {
+    this.set(
+      this.cdnCacheControlHeaderName,
+      serializeCacheControlHeader(directives),
+    );
+  }
+
+  /**
+   * The parsed cache-control header for the browser cache.
+   */
+  public getCacheControl(): Record<string, string> {
+    return parseCacheControlHeader(this.get("Cache-Control"));
+  }
+
+  public setCacheControl(directives: Record<string, string>): void {
+    this.set("Cache-Control", serializeCacheControlHeader(directives));
+  }
+
+  /**
+   * The parsed content of the cache tags header.
+   */
+
+  public getCacheTags(): Array<string> {
+    return this.get(this.cacheTagHeaderName)?.split(",") ?? [];
+  }
+  public setCacheTags(tags: Array<string>): void {
+    this.set(this.cacheTagHeaderName, tags.join(","));
   }
 }
