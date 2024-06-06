@@ -4,7 +4,7 @@
   "description": "",
   "main": "dist/index.js",
   "type": "module",
-  "types": "dist/_tsup-dts-rollup.d.ts",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "src"
@@ -13,11 +13,11 @@
     ".": {
       "deno": "./src/index.ts",
       "import": {
-        "types": "./dist/_tsup-dts-rollup.d.ts",
+        "types": "./dist/index.d.ts",
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/_tsup-dts-rollup.d.cts",
+        "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
     }
@@ -29,7 +29,7 @@
     "splitting": false,
     "sourcemap": true,
     "clean": true,
-    "experimentalDts": true,
+    "dts": true,
     "format": [
       "esm",
       "cjs"
@@ -48,7 +48,6 @@
   "license": "MIT",
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
-    "@microsoft/api-extractor": "^7.47.0",
     "@types/node": "^20.14.2",
     "prettier": "^3.3.1",
     "publint": "^0.2.8",
