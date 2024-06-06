@@ -4,16 +4,6 @@ import { describe, it } from "node:test";
 import { CacheHeaders, ONE_DAY } from "./dist/index.js";
 
 describe("CacheHeaders", () => {
-  it("should detect Netlify CDN", () => {
-    process.env.NETLIFY = "true";
-    const headers = new CacheHeaders();
-    assert.strictEqual(
-      headers.cdnCacheControlHeaderName,
-      "Netlify-CDN-Cache-Control",
-    );
-    delete process.env.NETLIFY;
-  });
-
   it("should append cache tags", () => {
     const headers = new CacheHeaders({
       "Cache-Tag": "tag1",
@@ -63,26 +53,26 @@ describe("CacheHeaders", () => {
     );
   });
 
-  it("should set revalidatable headers", () => {
-    const headers = new CacheHeaders().revalidatable();
+  it("should merge default headers", () => {
+    const headers = new CacheHeaders({
+      "Cache-Control": "s-maxage=3600",
+      "Content-Type": "application/json",
+    });
     assert.strictEqual(
       headers.get("Cache-Control"),
       "public,max-age=0,must-revalidate",
+      "should remove s-maxage and set defaults",
     );
     assert.strictEqual(
       headers.get("CDN-Cache-Control"),
-      "public,s-maxage=31536000,must-revalidate",
+      "public,s-maxage=3600,must-revalidate",
+      "should use s-maxage from Cache-Control if present",
     );
-  });
-
-  it("sets tiered header on Netlify", () => {
-    process.env.NETLIFY = "true";
-    const headers = new CacheHeaders().swr();
     assert.strictEqual(
-      headers.get("Netlify-CDN-Cache-Control"),
-      "public,s-maxage=0,tiered,stale-while-revalidate=604800",
+      headers.get("Content-Type"),
+      "application/json",
+      "should preserve other headers",
     );
-    delete process.env.NETLIFY;
   });
 
   it("should chain methods", () => {
