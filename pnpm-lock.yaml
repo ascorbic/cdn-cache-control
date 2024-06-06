@@ -17,6 +17,9 @@ devDependencies:
   publint:
     specifier: ^0.2.8
     version: 0.2.8
+  tsdoc-markdown:
+    specifier: ^0.6.0
+    version: 0.6.0(typescript@5.5.0-beta)
   tsup:
     specifier: ^8.1.0
     version: 8.1.0(typescript@5.5.0-beta)
@@ -1375,6 +1378,15 @@ packages:
 
   /ts-interface-checker@0.1.13:
     resolution: {integrity: sha512-Y/arvbn+rrz3JCKl9C4kVNfTfSm2/mEp5FSz5EsZSANGPSlQrpRI5M4PKF+mJnE52jOO90PnPSc3Ur3bTQw0gA==}
+    dev: true
+
+  /tsdoc-markdown@0.6.0(typescript@5.5.0-beta):
+    resolution: {integrity: sha512-5Xbdm+g+96fwEv8LCLs5c4iGkcrieKutvjiA7Edh3jVXmnOjT+h6l8FjJZPw/FTXsWWN9f5ZMdRIQkiHJ9UPMw==}
+    hasBin: true
+    peerDependencies:
+      typescript: ^5
+    dependencies:
+      typescript: 5.5.0-beta
     dev: true
 
   /tsup@8.1.0(typescript@5.5.0-beta):

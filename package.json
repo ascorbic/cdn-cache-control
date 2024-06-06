@@ -1,5 +1,5 @@
 {
-  "name": "cachecontrol",
+  "name": "cdn-cache-control",
   "version": "1.0.0",
   "description": "",
   "main": "dist/index.js",
@@ -41,7 +41,8 @@
     "lint:package": "publint",
     "lint:prettier": "prettier --check src",
     "lint": "pnpm run '/^lint:.*/'",
-    "test": "pnpm build && node --test index.test.js"
+    "test": "pnpm build && node --test index.test.js",
+    "tsdoc": "tsdoc --src=src/index.ts && prettier --write README.md"
   },
   "keywords": [],
   "author": "Matt Kane <m@mk.gg>",
@@ -51,6 +52,7 @@
     "@types/node": "^20.14.2",
     "prettier": "^3.3.1",
     "publint": "^0.2.8",
+    "tsdoc-markdown": "^0.6.0",
     "tsup": "^8.1.0",
     "typescript": "5.5.0-beta"
   },
