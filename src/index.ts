@@ -60,6 +60,34 @@ export class CacheHeaders extends Headers {
   public constructor(init?: HeadersInit) {
     super(init);
     this.#cdn = detectCDN();
+    const cdnDirectives = parseCacheControlHeader(
+      this.get(this.cdnCacheControlHeaderName),
+    );
+    const directives = parseCacheControlHeader(this.get("Cache-Control"));
+
+    const sMaxAge =
+      cdnDirectives["s-maxage"] ??
+      cdnDirectives["max-age"] ??
+      directives["s-maxage"] ??
+      ONE_YEAR.toString();
+
+    cdnDirectives.public = "";
+    cdnDirectives["s-maxage"] = sMaxAge;
+    delete cdnDirectives["max-age"];
+    cdnDirectives["must-revalidate"] = "";
+    if (this.#cdn === "netlify") {
+      cdnDirectives[tieredDirective] = "";
+    }
+    this.setCdnCacheControl(cdnDirectives);
+
+    directives.public = "";
+    delete directives["s-maxage"];
+
+    if (!directives["max-age"]) {
+      directives["max-age"] = "0";
+      directives["must-revalidate"] = "";
+    }
+    this.setCacheControl(directives);
   }
 
   /**
@@ -76,50 +104,17 @@ export class CacheHeaders extends Headers {
   }
 
   /**
-   * Sets stale-while-revalidate directive for the CDN cache. T=By default the browser is sent a must-revalidate
+   * Sets stale-while-revalidate directive for the CDN cache. By default the browser is sent a must-revalidate
    * directive to ensure that the browser always revalidates the cache with the server.
    * @param value The number of seconds to set the stale-while-revalidate directive to. Defaults to 1 week.
    */
 
   swr(value: number = ONE_WEEK): this {
-    const currentSMaxAge = this.getCdnCacheControl()["s-maxage"];
-    this.revalidatable(Number(currentSMaxAge) || 0);
     const cdnDirectives = this.getCdnCacheControl();
     cdnDirectives["stale-while-revalidate"] = value.toString();
-    if (this.#cdn === "netlify") {
-      cdnDirectives[tieredDirective] = "";
-    }
     delete cdnDirectives["must-revalidate"];
     this.setCdnCacheControl(cdnDirectives);
-    return this;
-  }
-
-  /**
-   * Sets cache headers for content that should be cached for a long time, but can be revalidated.
-   * The CDN cache will cache the content for the specified time, but the browser will always revalidate
-   * the cache with the server to ensure that the content is up to date.
-   * @param ttl The number of seconds to set the CDN cache-control s-maxage directive to. Defaults to 1 year.
-   */
-
-  revalidatable(ttl: number = ONE_YEAR): this {
-    const cdnDirectives = parseCacheControlHeader(
-      this.get(this.cdnCacheControlHeaderName),
-    );
-    cdnDirectives.public = "";
-    cdnDirectives["s-maxage"] = ttl.toString();
-    cdnDirectives["must-revalidate"] = "";
-    if (this.#cdn === "netlify") {
-      cdnDirectives[tieredDirective] = "";
-    }
-    this.setCdnCacheControl(cdnDirectives);
-
-    const directives = parseCacheControlHeader(this.get("Cache-Control"));
-    directives.public = "";
-    if (!directives["max-age"]) {
-      directives["max-age"] = "0";
-      directives["must-revalidate"] = "";
-    }
-    this.setCacheControl(directives);
+    this.ttl(0);
     return this;
   }
 
@@ -135,15 +130,15 @@ export class CacheHeaders extends Headers {
     const cdnDirectives = this.getCdnCacheControl();
     cdnDirectives.public = "";
     cdnDirectives["s-maxage"] = value.toString();
-    if (this.#cdn === "netlify") {
-      cdnDirectives[tieredDirective] = "";
-    }
     cdnDirectives.immutable = "";
+    delete cdnDirectives["must-revalidate"];
     this.setCdnCacheControl(cdnDirectives);
 
     const directives = this.getCacheControl();
     directives.public = "";
     directives["max-age"] = value.toString();
+    delete directives["must-revalidate"];
+
     directives.immutable = "";
     this.setCacheControl(directives);
     return this;
@@ -158,10 +153,15 @@ export class CacheHeaders extends Headers {
   ttl(value: number): this {
     const cdnDirectives = this.getCdnCacheControl();
     cdnDirectives["s-maxage"] = value.toString();
-    if (this.#cdn === "netlify") {
-      cdnDirectives[tieredDirective] = "";
-    }
     this.setCdnCacheControl(cdnDirectives);
+
+    if (cdnDirectives.immutable) {
+      const directives = this.getCacheControl();
+      directives.immutable = "";
+      directives["max-age"] = value.toString();
+      this.setCacheControl(directives);
+    }
+
     return this;
   }
 

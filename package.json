@@ -41,7 +41,7 @@
     "lint:package": "publint",
     "lint:prettier": "prettier --check src",
     "lint": "pnpm run '/^lint:.*/'",
-    "test": "pnpm build && node --test index.test.js",
+    "test": "pnpm build && node --test",
     "tsdoc": "tsdoc --src=src/index.ts && prettier --write README.md"
   },
   "keywords": [],
