@@ -4,10 +4,10 @@ import process from "node:process";
 export type CDN = "netlify";
 
 export const ONE_MINUTE = 60;
-export const ONE_HOUR = ONE_MINUTE * 60;
-export const ONE_DAY = ONE_HOUR * 24;
-export const ONE_WEEK = ONE_DAY * 7;
-export const ONE_YEAR = ONE_DAY * 365;
+export const ONE_HOUR = 3600;
+export const ONE_DAY = 86400;
+export const ONE_WEEK = 604800;
+export const ONE_YEAR = 31536000;
 
 // The tiered directive is used by Netlify to indicate that it should use a tiered cache, with a central cache shared by all edge nodes.
 const tieredDirective = "tiered";
@@ -80,7 +80,7 @@ export class CacheHeaders extends Headers {
   public getCdnCacheControl(): Record<string, string> {
     return parseCacheControlHeader(this.get(this.cdnCacheControlHeaderName));
   }
-  public setCdnCacheControl(directives: Record<string, string>) {
+  public setCdnCacheControl(directives: Record<string, string>): void {
     this.set(
       this.cdnCacheControlHeaderName,
       serializeCacheControlHeader(directives),
@@ -94,7 +94,7 @@ export class CacheHeaders extends Headers {
     return parseCacheControlHeader(this.get("Cache-Control"));
   }
 
-  public setCacheControl(directives: Record<string, string>) {
+  public setCacheControl(directives: Record<string, string>): void {
     this.set("Cache-Control", serializeCacheControlHeader(directives));
   }
 
@@ -102,7 +102,7 @@ export class CacheHeaders extends Headers {
    * The parsed content of the cache tags header.
    */
 
-  public setCacheTags(tags: Array<string>) {
+  public setCacheTags(tags: Array<string>): void {
     this.set(this.cacheTagHeaderName, tags.join(","));
   }
 
@@ -115,7 +115,7 @@ export class CacheHeaders extends Headers {
    * @param tag The cache tag to add. Can be a string or an array of strings.
    */
 
-  tag(tag: string | Array<string>, ...tags: Array<string>) {
+  tag(tag: string | Array<string>, ...tags: Array<string>): this {
     if (Array.isArray(tag)) {
       tag = tag.join(",");
     }
@@ -129,7 +129,7 @@ export class CacheHeaders extends Headers {
    * @param value The number of seconds to set the stale-while-revalidate directive to. Defaults to 1 week.
    */
 
-  swr(value: number = ONE_WEEK) {
+  swr(value: number = ONE_WEEK): this {
     const currentSMaxAge = this.getCdnCacheControl()["s-maxage"];
     this.revalidatable(Number(currentSMaxAge) || 0);
     const cdnDirectives = this.getCdnCacheControl();
@@ -149,7 +149,7 @@ export class CacheHeaders extends Headers {
    * @param value The number of seconds to set the CDN cache-control s-maxage directive to. Defaults to 1 year.
    */
 
-  revalidatable(value: number = ONE_YEAR) {
+  revalidatable(value: number = ONE_YEAR): this {
     const cdnDirectives = parseCacheControlHeader(
       this.get(this.cdnCacheControlHeaderName),
     );
@@ -179,7 +179,7 @@ export class CacheHeaders extends Headers {
    * @param value The number of seconds to set the CDN cache-control s-maxage directive to. Defaults to 1 year.
    */
 
-  immutable(value: number = ONE_YEAR) {
+  immutable(value: number = ONE_YEAR): this {
     const cdnDirectives = this.getCdnCacheControl();
     cdnDirectives.public = "";
     cdnDirectives["s-maxage"] = value.toString();
@@ -201,7 +201,7 @@ export class CacheHeaders extends Headers {
    * Returns the headers as a plain object.
    */
 
-  toObject() {
+  toObject(): Record<string, string> {
     return Object.fromEntries(this.entries());
   }
 }
