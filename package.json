@@ -1,0 +1,59 @@
+{
+  "name": "cachecontrol",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "type": "module",
+  "types": "dist/_tsup-dts-rollup.d.ts",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "exports": {
+    ".": {
+      "deno": "./src/index.ts",
+      "import": {
+        "types": "./dist/_tsup-dts-rollup.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/_tsup-dts-rollup.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true,
+    "experimentalDts": true,
+    "format": [
+      "esm",
+      "cjs"
+    ]
+  },
+  "scripts": {
+    "build": "tsup",
+    "lint:types": "attw --pack .",
+    "lint:package": "publint",
+    "lint:prettier": "prettier --check src",
+    "lint": "pnpm run '/^lint:.*/'",
+    "test": "pnpm build && node --test index.test.js"
+  },
+  "keywords": [],
+  "author": "Matt Kane <m@mk.gg>",
+  "license": "MIT",
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.15.3",
+    "@microsoft/api-extractor": "^7.47.0",
+    "@types/node": "^20.14.2",
+    "prettier": "^3.3.1",
+    "publint": "^0.2.8",
+    "tsup": "^8.1.0",
+    "typescript": "^5.4.5"
+  },
+  "packageManager": "pnpm@8.14.0+sha1.bb42032ff80dba5f9245bc1b03470d2fa0b7fb2f"
+}
