@@ -105,4 +105,19 @@ describe("CacheHeaders", () => {
       "cache-tag": "tag1,tag2,tag3",
     });
   });
+
+  it("copies headers to an existing object", () => {
+    const existing = new Headers([["x-foo", "bar"]]);
+    const headers = new CacheHeaders().swr().tag("tag1").tag("tag2", "tag3");
+
+    const copied = headers.copyTo(existing);
+
+    assert.strictEqual(existing.get("x-foo"), "bar");
+    assert.strictEqual(
+      existing.get("CDN-Cache-Control"),
+      "public,s-maxage=0,stale-while-revalidate=604800",
+    );
+    assert.strictEqual(existing.get("Cache-Tag"), "tag1,tag2,tag3");
+    assert.strictEqual(existing, copied);
+  });
 });
