@@ -173,6 +173,17 @@ export class CacheHeaders extends Headers {
     return Object.fromEntries(this.entries());
   }
 
+  /**
+   * Copy the headers from this instance to another Headers instance.
+   */
+
+  copyTo<T extends Headers>(headers: T): T {
+    this.forEach((value, key) => {
+      headers.set(key, value);
+    });
+    return headers;
+  }
+
   private get cacheTagHeaderName(): string {
     switch (this.#cdn) {
       case "netlify":

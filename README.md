@@ -107,6 +107,17 @@ export default async function handler(request: Request): Promise<Response> {
 }
 ```
 
+Some frameworks use a readonly `Response` object, so you need to use an existing `headers` object. In this case you can use the `copyTo` method to copy the headers to the response:
+
+```astro
+---
+import { CacheHeaders, ONE_HOUR } from "cdn-cache-control";
+
+new CacheHeaders().swr(ONE_HOUR).copyTo(Astro.response.headers);
+---
+
+```
+
 ## API
 
 <!-- TSDOC_START -->
@@ -168,6 +179,7 @@ Number of seconds in one year
 - [immutable](#gear-immutable)
 - [ttl](#gear-ttl)
 - [toObject](#gear-toobject)
+- [copyTo](#gear-copyto)
 - [getCdnCacheControl](#gear-getcdncachecontrol)
 - [setCdnCacheControl](#gear-setcdncachecontrol)
 - [getCacheControl](#gear-getcachecontrol)
@@ -233,6 +245,14 @@ Returns the headers as a plain object.
 | ---------- | ------------------------------ |
 | `toObject` | `() => Record<string, string>` |
 
+#### :gear: copyTo
+
+Copy the headers from this instance to another Headers instance.
+
+| Method   | Type                                   |
+| -------- | -------------------------------------- |
+| `copyTo` | `<T extends Headers>(headers: T) => T` |
+
 #### :gear: getCdnCacheControl
 
 The parsed cache-control header for the CDN cache.
@@ -276,6 +296,10 @@ The parsed content of the cache tags header.
 | `setCacheTags` | `(tags: string[]) => void` |
 
 <!-- TSDOC_END -->
+
+```
+
+```
 
 ```
 
