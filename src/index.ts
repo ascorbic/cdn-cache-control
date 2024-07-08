@@ -16,7 +16,7 @@ export const ONE_WEEK = 604800;
 export const ONE_YEAR = 31536000;
 
 // The tiered directive is used by Netlify to indicate that it should use a tiered cache, with a central cache shared by all edge nodes.
-const tieredDirective = "tiered";
+const tieredDirective = "durable";
 
 function detectCDN(): CDN | undefined {
   if (process.env.NETLIFY || process.env.NETLIFY_LOCAL) {
