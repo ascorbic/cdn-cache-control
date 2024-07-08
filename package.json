@@ -1,7 +1,9 @@
 {
   "name": "cdn-cache-control",
   "version": "1.0.0",
-  "description": "",
+  "description": "Easy, opinionated CDN cache header handling",
+  "homepage": "https://github.com/ascorbic/cdn-cache-control",
+  "repository": "ascorbic/cdn-cache-control",
   "main": "dist/index.js",
   "type": "module",
   "types": "dist/index.d.ts",
@@ -49,12 +51,13 @@
   "license": "MIT",
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.15.3",
+    "@changesets/cli": "^2.27.7",
     "@types/node": "^20.14.2",
     "prettier": "^3.3.1",
     "publint": "^0.2.8",
     "tsdoc-markdown": "^0.6.0",
     "tsup": "^8.1.0",
-    "typescript": "5.5.0-beta"
+    "typescript": "^5.5.3"
   },
   "packageManager": "pnpm@8.14.0+sha1.bb42032ff80dba5f9245bc1b03470d2fa0b7fb2f"
 }
