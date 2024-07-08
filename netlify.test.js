@@ -10,7 +10,7 @@ describe("Netlify", () => {
     const headers = new CacheHeaders().swr();
     assert.strictEqual(
       headers.get("Netlify-CDN-Cache-Control"),
-      "public,s-maxage=0,tiered,stale-while-revalidate=604800",
+      "public,s-maxage=0,durable,stale-while-revalidate=604800",
     );
   });
 
