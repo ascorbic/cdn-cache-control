@@ -1,18 +1,24 @@
 name: Run Tests
 
 on:
-  pull_request:
-    branches: [main]
+  pull_request_target:
+    types: [opened, synchronize, reopened]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-
+    if: |
+      github.event.pull_request.head.repo.full_name == github.repository ||
+      github.event.pull_request.head.ref == 'changeset-release/main'
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Use Node.js
         uses: actions/setup-node@v3
+        with:
+          node-version: "20"
 
       - run: corepack enable
 
