@@ -1,6 +1,6 @@
 <h1 align="center">cdn-cache-control</h1>
 <p align="center"> 
-  <img alt="cdn-cache-control" src="https://github.com/user-attachments/assets/0701dacb-2cda-49c9-96f0-fc2ae3b6b874" />
+  <img alt="cdn-cache-control" src="https://github.com/user-attachments/assets/62464d67-cbd5-48b5-a36d-800678ae22bb" />
 </p>
 
 
