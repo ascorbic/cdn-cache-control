@@ -1,5 +1,6 @@
 {
-  "name": "@ascorbic/cdn-cache-control",
-  "version": "1.0.0",
-  "exports": "./src/index.ts"
+	"name": "@ascorbic/cdn-cache-control",
+	"version": "1.2.0",
+	"exports": "./src/index.ts",
+	"license": "MIT"
 }
