@@ -1,8 +1,13 @@
 import process from "node:process";
 
 // TODO: Add more CDNs
-/** The CDN that the cache headers are being used with. WIll work with other CDNs, but may miss platform-specific headers and directives. */
-export type CDN = "netlify";
+/** The CDN that the cache headers are being used with. Will work with other CDNs, but may miss platform-specific headers and directives. */
+export type CDN =
+  | "netlify"
+  | "cloudflare"
+  | "akamai"
+  | "vercel"
+  | (string & {});
 
 /** Number of seconds in one minute */
 export const ONE_MINUTE = 60;
@@ -18,13 +23,28 @@ export const ONE_YEAR = 31536000;
 // The tiered directive is used by Netlify to indicate that it should use a tiered cache, with a central cache shared by all edge nodes.
 const tieredDirective = "durable";
 
+const cdnCacheControlHeaderNames = new Map<CDN, string>([
+  ["netlify", "Netlify-CDN-Cache-Control"],
+  ["cloudflare", "Cloudflare-CDN-Cache-Control"],
+  ["akamai", "Akamai-Cache-Control"],
+  ["vercel", "Vercel-CDN-Cache-Control"],
+]);
+
 function detectCDN(): CDN | undefined {
-  if (process.env.NETLIFY || process.env.NETLIFY_LOCAL) {
-    return "netlify";
-  }
   if (process.env.CDN) {
     return process.env.CDN as CDN;
   }
+  if (process.env.VERCEL) {
+    return "vercel";
+  }
+  if (
+    process.env.NETLIFY ||
+    process.env.NETLIFY_LOCAL ||
+    process.env.NETLIFY_BLOBS_CONTEXT
+  ) {
+    return "netlify";
+  }
+
   return undefined;
 }
 
@@ -57,9 +77,9 @@ function serializeCacheControlHeader(
 export class CacheHeaders extends Headers {
   #cdn?: CDN;
 
-  public constructor(init?: HeadersInit) {
+  public constructor(init?: HeadersInit, cdn?: CDN) {
     super(init);
-    this.#cdn = detectCDN();
+    this.#cdn = cdn ?? detectCDN();
     const cdnDirectives = parseCacheControlHeader(
       this.get(this.cdnCacheControlHeaderName),
     );
@@ -194,12 +214,9 @@ export class CacheHeaders extends Headers {
   }
 
   private get cdnCacheControlHeaderName(): string {
-    switch (this.#cdn) {
-      case "netlify":
-        return "Netlify-CDN-Cache-Control";
-      default:
-        return "CDN-Cache-Control";
-    }
+    return (
+      cdnCacheControlHeaderNames.get(this.#cdn ?? "") ?? "CDN-Cache-Control"
+    );
   }
 
   /**

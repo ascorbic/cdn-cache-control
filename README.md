@@ -1,8 +1,7 @@
 <h1 align="center">cdn-cache-control</h1>
-<p align="center"> 
+<p align="center">
   <img alt="cdn-cache-control" src="https://github.com/user-attachments/assets/62464d67-cbd5-48b5-a36d-800678ae22bb" />
 </p>
-
 
 Easy, opinionated CDN cache header handling.
 
@@ -32,6 +31,8 @@ import { CacheHeaders } from "jsr:@ascorbic/cdn-cache-control";
 The module exports a single class, `CacheHeaders`, which is a subclass of the fetch [`Headers`](https://developer.mozilla.org/en-US/docs/Web/API/Headers) class. It provides a chainable API for setting cache headers. By default it sets the `Cache-Control` and `CDN-Cache-Control` headers to sensible defaults for content that should be cached by the CDN and revalidated by the browser.
 
 It can be instantiated with a `HeadersInit` value, which lets you base it on an existing `Headers` object, or an object or array with existing header values. In that case it will default to using existing `s-maxage` directives if present.
+
+You can pass a `cdn` value as the second argument to set the CDN cache control header. In some cases this will enable targeted cache header names. e.g. for Netlify it will use the `Netlify-CDN-Cache-Control` header. Currently supported values are `netlify`, `vercel`, `cloudflare` and `akamai`. If you don't pass a value, or pass an unsupported one it will use the generic `CDN-Cache-Control` header. It will also attempt to detect the platform automatically on Vercel and Netlify.
 
 ### Use cases
 
@@ -178,18 +179,34 @@ Number of seconds in one year
 
 ### Methods
 
-- [tag](#gear-tag)
-- [swr](#gear-swr)
-- [immutable](#gear-immutable)
-- [ttl](#gear-ttl)
-- [toObject](#gear-toobject)
-- [copyTo](#gear-copyto)
-- [getCdnCacheControl](#gear-getcdncachecontrol)
-- [setCdnCacheControl](#gear-setcdncachecontrol)
-- [getCacheControl](#gear-getcachecontrol)
-- [setCacheControl](#gear-setcachecontrol)
-- [getCacheTags](#gear-getcachetags)
-- [setCacheTags](#gear-setcachetags)
+- [Installation](#installation)
+- [Usage](#usage)
+	- [Use cases](#use-cases)
+		- [stale-while-revalidate](#stale-while-revalidate)
+		- [Immutable content](#immutable-content)
+		- [Cache tags](#cache-tags)
+		- [Using the generated headers](#using-the-generated-headers)
+- [API](#api)
+- [:wrench: Constants](#wrench-constants)
+	- [:gear: ONE\_MINUTE](#gear-one_minute)
+	- [:gear: ONE\_HOUR](#gear-one_hour)
+	- [:gear: ONE\_DAY](#gear-one_day)
+	- [:gear: ONE\_WEEK](#gear-one_week)
+	- [:gear: ONE\_YEAR](#gear-one_year)
+- [:factory: CacheHeaders](#factory-cacheheaders)
+	- [Methods](#methods)
+		- [:gear: tag](#gear-tag)
+		- [:gear: swr](#gear-swr)
+		- [:gear: immutable](#gear-immutable)
+		- [:gear: ttl](#gear-ttl)
+		- [:gear: toObject](#gear-toobject)
+		- [:gear: copyTo](#gear-copyto)
+		- [:gear: getCdnCacheControl](#gear-getcdncachecontrol)
+		- [:gear: setCdnCacheControl](#gear-setcdncachecontrol)
+		- [:gear: getCacheControl](#gear-getcachecontrol)
+		- [:gear: setCacheControl](#gear-setcachecontrol)
+		- [:gear: getCacheTags](#gear-getcachetags)
+		- [:gear: setCacheTags](#gear-setcachetags)
 
 #### :gear: tag
 
@@ -300,15 +317,3 @@ The parsed content of the cache tags header.
 | `setCacheTags` | `(tags: string[]) => void` |
 
 <!-- TSDOC_END -->
-
-```
-
-```
-
-```
-
-```
-
-```
-
-```
