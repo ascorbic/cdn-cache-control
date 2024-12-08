@@ -39,7 +39,7 @@ jobs:
         run: pnpm build
 
       - name: publint
-        run: pnpm lint:publint
+        run: pnpm lint:package
 
       - name: Create Release PR or Publish to npm
         id: changesets
