@@ -1,7 +1,7 @@
 // @ts-check
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { CacheHeaders, ONE_DAY } from "./dist/index.js";
+import { CacheHeaders, ONE_DAY } from "../dist/index.js";
 
 describe("CacheHeaders", () => {
   it("should append cache tags", () => {

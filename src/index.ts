@@ -29,11 +29,20 @@ const cdnCacheControlHeaderNames = new Map<CDN, string>([
   ["fastly", "Cache-Control"],
 ]);
 
+type Global = typeof globalThis & {
+  process?: {
+    env?: {
+      CDN?: string;
+      VERCEL?: string;
+    };
+  };
+};
+
 function detectCDN(): CDN | undefined {
-  if (globalThis?.process?.env?.CDN) {
-    return globalThis.process.env.CDN as CDN;
+  if ((globalThis as Global).process?.env?.CDN) {
+    return (globalThis as Global).process.env.CDN as CDN;
   }
-  if (globalThis?.process?.env.VERCEL) {
+  if ((globalThis as Global).process?.env.VERCEL) {
     return "vercel";
   }
   if ("Netlify" in globalThis) {

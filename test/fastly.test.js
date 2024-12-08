@@ -1,6 +1,7 @@
+// @ts-check
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { CacheHeaders } from "./dist/index.js";
+import { CacheHeaders } from "../dist/index.js";
 
 describe("Fastly", () => {
   it("merges cdn-cache-control header into cache-control", () => {
