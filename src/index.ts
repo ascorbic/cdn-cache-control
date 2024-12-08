@@ -1,12 +1,10 @@
-import process from "node:process";
-
-// TODO: Add more CDNs
 /** The CDN that the cache headers are being used with. Will work with other CDNs, but may miss platform-specific headers and directives. */
 export type CDN =
   | "netlify"
   | "cloudflare"
   | "akamai"
   | "vercel"
+  | "fastly"
   | (string & {});
 
 /** Number of seconds in one minute */
@@ -28,20 +26,17 @@ const cdnCacheControlHeaderNames = new Map<CDN, string>([
   ["cloudflare", "Cloudflare-CDN-Cache-Control"],
   ["akamai", "Akamai-Cache-Control"],
   ["vercel", "Vercel-CDN-Cache-Control"],
+  ["fastly", "Cache-Control"],
 ]);
 
 function detectCDN(): CDN | undefined {
-  if (process.env.CDN) {
-    return process.env.CDN as CDN;
+  if (globalThis?.process?.env?.CDN) {
+    return globalThis.process.env.CDN as CDN;
   }
-  if (process.env.VERCEL) {
+  if (globalThis?.process?.env.VERCEL) {
     return "vercel";
   }
-  if (
-    process.env.NETLIFY ||
-    process.env.NETLIFY_LOCAL ||
-    process.env.NETLIFY_BLOBS_CONTEXT
-  ) {
+  if ("Netlify" in globalThis) {
     return "netlify";
   }
 
@@ -98,10 +93,15 @@ export class CacheHeaders extends Headers {
     if (this.#cdn === "netlify") {
       cdnDirectives[tieredDirective] = "";
     }
-    this.setCdnCacheControl(cdnDirectives);
 
-    directives.public = "";
-    delete directives["s-maxage"];
+    // If the CDN cache-control header is the same as the browser cache-control header, we merge the directives.
+    if (this.cdnCacheControlHeaderName === "Cache-Control") {
+      Object.assign(directives, cdnDirectives);
+    } else {
+      this.setCdnCacheControl(cdnDirectives);
+      delete directives["s-maxage"];
+      directives.public = "";
+    }
 
     if (!directives["max-age"]) {
       directives["max-age"] = "0";
@@ -208,6 +208,8 @@ export class CacheHeaders extends Headers {
     switch (this.#cdn) {
       case "netlify":
         return "Netlify-Cache-Tag";
+      case "fastly":
+        return "Surrogate-Key";
       default:
         return "Cache-Tag";
     }

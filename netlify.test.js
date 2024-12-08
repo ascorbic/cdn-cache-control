@@ -1,5 +1,5 @@
 import assert from "node:assert";
-import { before, describe, it } from "node:test";
+import { describe, it } from "node:test";
 import { CacheHeaders } from "./dist/index.js";
 
 describe("Netlify", () => {
