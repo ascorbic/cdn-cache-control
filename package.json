@@ -42,7 +42,6 @@
 		"lint:types": "attw --pack .",
 		"lint:package": "publint",
 		"lint:prettier": "prettier --check src",
-		"publish": "changeset publish && npx jsr publish",
 		"lint": "pnpm run '/^lint:.*/'",
 		"test": "pnpm build && node --test",
 		"tsdoc": "tsdoc --src=src/index.ts && prettier --write README.md",

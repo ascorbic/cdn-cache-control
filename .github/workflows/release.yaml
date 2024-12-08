@@ -46,10 +46,13 @@ jobs:
         uses: changesets/action@v1
         with:
           version: pnpm run version
-          publish: pnpm run publish
+          publish: pnpm changeset publish
           commit: "ci: release"
           title: "ci: release"
         env:
           GITHUB_TOKEN: ${{ steps.get-token.outputs.token }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
+      - name: Publish to JSR
+        if: steps.changesets.outputs.published == 'true'
+        run: npx jsr publish
