@@ -1,5 +1,11 @@
 # cdn-cache-control
 
+## 1.3.1
+
+### Patch Changes
+
+- 3c53faa: Fixes to types
+
 ## 1.3.0
 
 ### Minor Changes
