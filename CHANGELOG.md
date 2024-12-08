@@ -1,5 +1,15 @@
 # cdn-cache-control
 
+## 1.3.0
+
+### Minor Changes
+
+- 3a77195: Adds Fastly support
+
+### Patch Changes
+
+- 3a77195: Remove dependency on node:process
+
 ## 1.2.0
 
 ### Minor Changes
