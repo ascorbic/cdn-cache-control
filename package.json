@@ -45,7 +45,8 @@
 		"publish": "changeset publish && npx jsr publish",
 		"lint": "pnpm run '/^lint:.*/'",
 		"test": "pnpm build && node --test",
-		"tsdoc": "tsdoc --src=src/index.ts && prettier --write README.md"
+		"tsdoc": "tsdoc --src=src/index.ts && prettier --write README.md",
+		"version": "changeset version && jq --arg version \"$(jq -r .version package.json)\" '.version = $version' jsr.json > jsr.json.tmp && mv jsr.json.tmp jsr.json"
 	},
 	"keywords": [],
 	"author": "Matt Kane <m@mk.gg>",
