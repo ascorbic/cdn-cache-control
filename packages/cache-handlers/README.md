@@ -100,7 +100,7 @@ const handle = createCacheHandler({
 export default {
 	async fetch(request, env, ctx) {
 		return handle(request, {
-			runInBackground: ctx.waitUntil,
+			runInBackground: ctx.waitUntil.bind(ctx),
 		});
 	},
 };
@@ -133,7 +133,7 @@ import handler from "./handler.js";
 addEventListener("fetch", (event) => {
 	const handle = createCacheHandler({
 		handler: handleRequest,
-		runInBackground: event.waitUntil,
+		runInBackground: event.waitUntil.bind(event),
 	});
 	event.respondWith(handle(event.request));
 });
@@ -284,6 +284,87 @@ import type {
 } from "cache-handlers";
 ```
 
+## Important Caveats & behaviour
+
+### Race Conditions
+
+**Concurrent Cache Writes**: Multiple simultaneous requests for the same resource may result in duplicate cache writes. The last write wins, but all requests will complete successfully. This is generally harmless but may cause temporary inconsistency during high concurrency.
+
+**Background Revalidation**: When using `stale-while-revalidate`, multiple concurrent requests during the SWR window will each trigger their own background revalidation. The library does not deduplicate these - each will run independently. Consider using request deduplication at the application level if this is a concern.
+
+**Invalidation During Revalidation**: Cache invalidation operations may occur while background revalidation is in progress. The invalidation will complete immediately, but in-flight revalidations may still write back to the cache, potentially restoring stale data.
+
+### Platform-Specific CacheStorage behaviour
+
+Different platforms implement the Web Standard `CacheStorage` API with varying capabilities and limitations:
+
+#### Cloudflare Workers
+```ts
+// ✅ Full support for all features
+// ✅ Persistent across requests within the same data center
+// ✅ Automatic geographic distribution
+// ⚠️  Cache keys limited to ~8KB total URL length
+// ⚠️  Cache entries expire after ~1 hour of inactivity
+```
+
+#### Deno Deploy
+```ts
+// ✅ Full CacheStorage support
+// ✅ Persistent across deployments in same region
+// ⚠️  Regional caches - not globally distributed
+// ⚠️  Cache may not persist during deployment updates
+```
+
+#### Node.js (with undici polyfill)
+```ts
+// ✅ Works via undici polyfill
+// ⚠️  In-memory only by default - not persistent across restarts
+// ⚠️  Limited to single process - no cross-process sharing
+// 💡 Consider using Redis or similar for production Node.js deployments
+```
+
+#### Netlify Edge Functions
+```ts
+// ✅ CacheStorage available
+// ⚠️  Cache is per-edge location, not globally consistent
+// ⚠️  Cache may be cleared during deployments
+```
+
+#### Vercel Edge Runtime
+```ts
+// ❌ CacheStorage not available
+// 💡 Use Vercel's built-in caching mechanisms instead
+```
+
+### Memory and Performance Considerations
+
+**Large Responses**: Caching large responses (>1MB) may impact performance and memory usage. Consider streaming or chunked responses for large payloads.
+
+**Cache Key Generation**: Complex cache key generation (e.g., with many vary parameters) can impact performance. Keep cache keys simple when possible.
+
+**Metadata Overhead**: Cache tag metadata is stored separately and may grow large with many tagged entries. Monitor cache statistics and clean up unused tags periodically.
+
+### Debugging and Monitoring
+
+Enable debug logging to understand cache behaviour:
+
+```ts
+createCacheHandler({
+  debug: {
+    enabled: true,
+    logLevel: 'verbose' // Use 'basic' in production
+  }
+});
+```
+
+Monitor cache statistics:
+
+```ts
+import { getCacheStats } from 'cache-handlers';
+const stats = await getCacheStats();
+console.log(`Cache: ${stats.totalEntries} entries, ${Object.keys(stats.entriesByTag).length} tags`);
+```
+
 ## Best Practices
 
 1. Always bound TTLs with `maxTtl`.
@@ -291,6 +372,9 @@ import type {
 3. Include cache tags for selective purge (`cache-tag: user:123, list:users`).
 4. Generate or preserve ETags to leverage client 304s.
 5. Keep cache keys stable & explicit if customizing via `getCacheKey`.
+6. Test cache behaviour thoroughly across your target platforms.
+7. Monitor cache hit rates and adjust TTLs based on usage patterns.
+8. Use debug logging during development to understand cache behaviour.
 
 ## License
 

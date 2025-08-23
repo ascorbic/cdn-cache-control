@@ -13,7 +13,7 @@ export async function POST({ request }: { request: Request }) {
         if (!value) {
           return Response.json({ success: false, error: "Tag value is required" }, { status: 400 });
         }
-        const tagCount = await invalidateByTag(value);
+        const tagCount = await invalidateByTag(value, { debug: true });
         result = { success: true, count: tagCount };
         break;
 
@@ -21,12 +21,12 @@ export async function POST({ request }: { request: Request }) {
         if (!value) {
           return Response.json({ success: false, error: "Path value is required" }, { status: 400 });
         }
-        const pathCount = await invalidateByPath(value);
+        const pathCount = await invalidateByPath(value, { debug: true });
         result = { success: true, count: pathCount };
         break;
 
       case "all":
-        const allCount = await invalidateAll();
+        const allCount = await invalidateAll({ debug: true });
         result = { success: true, count: allCount };
         break;
 
@@ -46,7 +46,7 @@ export async function POST({ request }: { request: Request }) {
 
 export async function GET() {
   try {
-    const stats = await getCacheStats();
+    const stats = await getCacheStats({ debug: true });
     return Response.json({
       success: true,
       stats,

@@ -130,3 +130,4 @@ dist
 .pnp.*
 .tsup
 .DS_Store
+.wrangler

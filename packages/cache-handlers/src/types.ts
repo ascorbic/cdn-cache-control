@@ -34,6 +34,12 @@ export interface CacheConfig<TRequest, TResponse> {
 	getCacheKey?: (request: TRequest) => Promise<string> | string;
 
 	/**
+	 * Debug configuration for logging cache operations
+	 * When true, enables basic debug logging with default settings
+	 */
+	debug?: boolean | DebugConfig;
+
+	/**
 	 * Features to enable/disable
 	 */
 	features?: {
@@ -366,4 +372,44 @@ export interface InvalidationOptions {
 	 * @default Uses caches.default if available, otherwise "cache-primitives-default"
 	 */
 	cacheName?: string;
+
+	/**
+	 * Debug configuration for logging invalidation operations
+	 * When true, enables basic debug logging with default settings
+	 */
+	debug?: boolean | DebugConfig;
+}
+
+/**
+ * Debug configuration for cache operations logging.
+ *
+ * @example
+ * ```typescript
+ * const debugConfig: DebugConfig = {
+ *   enabled: true,
+ *   logger: console.log,
+ *   logLevel: 'verbose'
+ * };
+ * ```
+ */
+export interface DebugConfig {
+	/**
+	 * Whether debug logging is enabled
+	 * @default false
+	 */
+	enabled?: boolean;
+
+	/**
+	 * Custom logger function
+	 * @default console.log
+	 */
+	logger?: (message: string, ...args: unknown[]) => void;
+
+	/**
+	 * Log level for debug output
+	 * - 'basic': Log basic cache operations (hits, misses, writes)
+	 * - 'verbose': Log detailed information including headers, keys, and metadata
+	 * @default 'basic'
+	 */
+	logLevel?: 'basic' | 'verbose';
 }

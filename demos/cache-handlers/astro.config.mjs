@@ -10,10 +10,6 @@ export default defineConfig({
 			enabled: true,
 			persist: true,
 		},
+		workerEntryPoint: { path: "src/worker.ts" },
 	}),
-	vite: {
-		build: {
-			minify: false, // Better error messages during development
-		},
-	},
 });

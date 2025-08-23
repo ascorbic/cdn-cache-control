@@ -108,7 +108,7 @@ describe("Cache Invalidation - Workerd Environment", () => {
 
 		await cache.put(complexRequest, complexResponse.clone());
 
-		// Verify it was cached correctly - workerd may have different caching behavior
+		// Verify it was cached correctly - workerd may have different caching behaviour
 		const cached = await cache.match(complexRequest);
 		// Note: workerd test environment may not cache all requests reliably
 		if (cached) {

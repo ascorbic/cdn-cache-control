@@ -190,7 +190,7 @@ Deno.test("Security - Cache key collision attack", () => {
 		query: [],
 	});
 
-	// Document the actual behavior - collision vulnerability is now fixed with :: separators
+	// Document the actual behaviour - collision vulnerability is now fixed with :: separators
 	assertEquals(key1, "https://example.com/api/users|admin:true");
 	assertEquals(key2, "https://example.com/api/users::h=admin:true");
 

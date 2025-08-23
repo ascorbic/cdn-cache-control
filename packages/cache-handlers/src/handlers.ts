@@ -8,6 +8,7 @@ import type {
 } from "./types.ts";
 import { readFromCache } from "./read.ts";
 import { writeToCache } from "./write.ts";
+import { createDebugLogger } from "./debug.ts";
 
 export function createCacheHandler<
 	TRequest extends MinimalRequest = Request,
@@ -17,6 +18,7 @@ export function createCacheHandler<
 ): CacheHandle<TRequest, TResponse> {
 	const baseHandler: HandlerFunction<TRequest, TResponse> | undefined =
 		options.handler;
+	const debug = createDebugLogger(options.debug);
 
 	const handle: CacheHandle<TRequest, TResponse> = async (
 		request,
@@ -24,6 +26,7 @@ export function createCacheHandler<
 	): Promise<TResponse> => {
 		// Only cache GET
 		if (request.method !== "GET") {
+			debug.log('handler', `Non-GET request (${request.method}), bypassing cache: ${request.url}`);
 			const handler = callOpts.handler || baseHandler;
 			if (!handler) {
 				return new Response("No handler provided", {
@@ -37,6 +40,12 @@ export function createCacheHandler<
 			request,
 			options,
 		);
+		
+		if (cached) {
+			debug.logCacheRead(request.url, needsBackgroundRevalidation ? 'stale' : 'hit');
+		} else {
+			debug.logCacheRead(request.url, 'miss');
+		}
 		const statusSetting = options.features?.cacheStatusHeader;
 		const enableStatus = !!statusSetting;
 		const cacheStatusName =
@@ -50,12 +59,14 @@ export function createCacheHandler<
 					const handler = baseHandler || callOpts.handler;
 					if (handler) {
 						try {
+							debug.log('handler', `Blocking revalidation for ${request.url}`);
 							const fresh = await handler(request, {
 								mode: "stale",
 								background: false,
 							});
 							return await writeToCache(request, fresh, options);
 						} catch (err) {
+							debug.logError('handler', err as Error, 'SWR blocking revalidation');
 							console.warn(
 								"SWR blocking revalidation failed; serving stale",
 								err,
@@ -65,16 +76,20 @@ export function createCacheHandler<
 				} else if (policy === "background") {
 					const handler = baseHandler || callOpts.handler;
 					if (handler) {
+						debug.logBackgroundRevalidation(request.url, true);
 						const scheduler = callOpts.runInBackground ||
 							options.runInBackground;
 						const revalidatePromise = (async () => {
 							try {
+								debug.log('handler', `Background revalidation starting for ${request.url}`);
 								const response = await handler(request, {
 									mode: "stale",
 									background: true,
 								});
 								await writeToCache(request, response, options);
+								debug.log('handler', `Background revalidation completed for ${request.url}`);
 							} catch (err) {
+								debug.logError('handler', err as Error, 'SWR background revalidation');
 								console.warn("SWR background revalidation failed", err);
 							}
 						})();
@@ -86,6 +101,7 @@ export function createCacheHandler<
 					}
 				} else if (policy === "off") {
 					// Treat stale-while-revalidate as disabled: delete and proceed as miss
+					debug.log('handler', `SWR disabled, deleting stale entry for ${request.url}`);
 					try {
 						await caches.open(options.cacheName || "cache-primitives-default")
 							.then((c) => c.delete(request as unknown as Request));
@@ -143,6 +159,7 @@ export function createCacheHandler<
 		}
 
 		// Cache miss
+		debug.log('handler', `Cache miss, calling handler for ${request.url}`);
 		const handler = callOpts.handler || baseHandler;
 		if (!handler) {
 			return new Response("Cache miss and no handler provided", {

@@ -6,6 +6,7 @@ import {
 	validateConditionalRequest,
 } from "./conditional.ts";
 import { safeJsonParse } from "./errors.ts";
+import { createDebugLogger } from "./debug.ts";
 
 const VARY_METADATA_KEY = "https://cache-internal/cache-vary-metadata";
 
@@ -16,7 +17,10 @@ export async function readFromCache<
 	request: TRequest,
 	config: CacheConfig<TRequest, TResponse> = {},
 ): Promise<{ cached: TResponse | null; needsBackgroundRevalidation: boolean }> {
+	const debug = createDebugLogger(config.debug);
+	
 	if (request.method !== "GET") {
+		debug.verbose('read', `Skipping cache read for non-GET request: ${request.method} ${request.url}`);
 		return { cached: null, needsBackgroundRevalidation: false };
 	}
 	const getCacheKey = config.getCacheKey || defaultGetCacheKey;
@@ -47,6 +51,7 @@ export async function readFromCache<
 		}
 		: undefined;
 	const cacheKey = await getCacheKey(request, varyArg);
+	debug.verbose('read', `Cache key generated: ${cacheKey}`, { varyArg });
 	const cacheRequest = new Request(cacheKey);
 	let cachedResponse: TResponse | null =
 		(await cache.match(cacheKey) as unknown as TResponse) ?? null;
@@ -67,7 +72,9 @@ export async function readFromCache<
 				}
 				if (swrSeconds && now < expiresAt + swrSeconds * 1000) {
 					needsBackgroundRevalidation = true;
+					debug.verbose('read', `Entry expired but within SWR window: ${request.url}`, { swrSeconds });
 				} else {
+					debug.verbose('read', `Entry expired and outside SWR window, removing: ${request.url}`);
 					cachedResponse.body?.cancel();
 					await cache.delete(cacheRequest);
 					cachedResponse = null;

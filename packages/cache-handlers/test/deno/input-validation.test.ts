@@ -136,7 +136,7 @@ Deno.test("Input Validation - Invalid header names and values", async () => {
 			assertEquals(result.headers.has("cache-tag"), false);
 		} catch (error) {
 			// Some header values are invalid and will be rejected by the browser/runtime
-			// This is expected behavior - the test verifies the runtime handles these appropriately
+			// This is expected behaviour - the test verifies the runtime handles these appropriately
 			const errorMsg = error instanceof Error
 				? `${error.constructor.name}: ${error.message}`
 				: String(error);
@@ -208,7 +208,7 @@ Deno.test("Input Validation - Request URLs with injection attempts", () => {
 			assert(cacheKey.includes(new URL(url).pathname));
 		} catch (error) {
 			// Some URLs might be invalid and throw during Request construction
-			// This is expected browser behavior, not a library issue
+			// This is expected browser behaviour, not a library issue
 			assert(
 				error instanceof TypeError,
 				`Unexpected error type for URL: ${url}`,
@@ -271,7 +271,7 @@ Deno.test(
 				assertEquals(result.statusText, testCase.statusText);
 			} catch (error) {
 				// Some status text values are invalid and will be rejected by the runtime
-				// This is expected behavior - the test verifies the runtime handles these appropriately
+				// This is expected behaviour - the test verifies the runtime handles these appropriately
 				assert(
 					error instanceof TypeError || error instanceof RangeError,
 					`Unexpected error type for test case: ${testCase.name}`,
@@ -343,7 +343,7 @@ Deno.test(
 				assert(deletedCount >= 0, `Invalid deleted count for tag: ${tags[0]}`);
 			} catch (error) {
 				// Some tags might be invalid and cause invalidation to fail
-				// This is acceptable behavior for malicious input
+				// This is acceptable behaviour for malicious input
 				console.warn(`Invalidation failed for tag ${tags[0]}:`, error);
 			}
 		}
@@ -389,7 +389,7 @@ Deno.test(
 			assertEquals(result.headers.get("custom-header"), "value");
 		} catch (error) {
 			// Some header names are invalid and will be rejected by the runtime
-			// This is expected behavior - the function should handle these appropriately
+			// This is expected behaviour - the function should handle these appropriately
 			assert(
 				error instanceof TypeError,
 				`Unexpected error type for malicious header removal`,

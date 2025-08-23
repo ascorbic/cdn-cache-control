@@ -17,12 +17,18 @@ export {
 	validateConditionalRequest,
 } from "./conditional.ts";
 
+export {
+	DebugLogger,
+	createDebugLogger,
+} from "./debug.ts";
+
 export type {
 	CacheConfig,
 	CacheHandle,
 	CacheInvokeOptions,
 	ConditionalRequestConfig,
 	ConditionalValidationResult,
+	DebugConfig,
 	HandlerFunction,
 	HandlerInfo,
 	HandlerMode,

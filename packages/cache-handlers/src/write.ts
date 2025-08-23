@@ -8,6 +8,7 @@ import {
 } from "./utils.ts";
 import { generateETag } from "./conditional.ts";
 import { updateTagMetadata, updateVaryMetadata } from "./metadata.ts";
+import { createDebugLogger } from "./debug.ts";
 
 const METADATA_KEY = "https://cache-internal/cache-primitives-metadata";
 const VARY_METADATA_KEY = "https://cache-internal/cache-vary-metadata";
@@ -20,16 +21,27 @@ export async function writeToCache<
 	response: TResponse,
 	config: CacheConfig<TRequest, TResponse> = {},
 ): Promise<TResponse> {
+	const debug = createDebugLogger(config.debug);
+	
 	if (request.method !== "GET") {
+		debug.verbose('write', `Skipping cache write for non-GET request: ${request.method} ${request.url}`);
 		return response;
 	}
 	const getCacheKey = config.getCacheKey || defaultGetCacheKey;
 	const cache = await getCache(config);
 	const cacheInfo = parseResponseHeaders(response, config);
 	if (!cacheInfo.shouldCache) {
+		debug.verbose('write', `Response not cacheable: ${request.url}`, { 
+			isPrivate: cacheInfo.isPrivate,
+			noCache: cacheInfo.noCache,
+			noStore: cacheInfo.noStore 
+		});
 		return removeHeaders<TResponse>(response, cacheInfo.headersToRemove);
 	}
 	const cacheKey = await getCacheKey(request, cacheInfo.vary);
+	debug.logCacheWrite(request.url, cacheInfo.ttl, cacheInfo.tags);
+	debug.verbose('write', `Cache key: ${cacheKey}`);
+	
 	const responseToCache = response.clone();
 	const headers = new Headers(responseToCache.headers);
 	if (cacheInfo.shouldGenerateETag) {

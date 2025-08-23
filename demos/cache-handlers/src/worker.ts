@@ -35,21 +35,25 @@ export function createExports(manifest: SSRManifest) {
 						conditionalRequests: { etag: "generate" },
 						cacheStatusHeader: "demo-cache",
 					},
+					debug: {
+						enabled: true,
+						logLevel: "verbose",
+					},
 				});
 
 				if (url.pathname.endsWith("/blocking")) {
 					return cacheHandle(request, {
 						swr: "blocking",
-						runInBackground: ctx.waitUntil,
+						runInBackground: ctx.waitUntil.bind(ctx),
 					});
 				}
 				if (url.pathname.endsWith("/off")) {
 					return cacheHandle(request, {
 						swr: "off",
-						runInBackground: ctx.waitUntil,
+						runInBackground: ctx.waitUntil.bind(ctx),
 					});
 				}
-				return cacheHandle(request, { runInBackground: ctx.waitUntil });
+				return cacheHandle(request, { runInBackground: ctx.waitUntil.bind(ctx) });
 			},
 		},
 	};
