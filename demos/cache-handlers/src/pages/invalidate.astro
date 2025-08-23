@@ -1,0 +1,142 @@
+---
+// Cache invalidation UI
+Astro.response.headers.set("Cache-Control", "no-store");
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cache Invalidation - Demo</title>
+    <style>
+      body { font-family: system-ui, sans-serif; margin: 2rem; line-height: 1.6; }
+      .form-group { margin: 1rem 0; }
+      label { display: block; font-weight: bold; margin-bottom: 0.5rem; }
+      input[type="text"], select { width: 300px; padding: 0.5rem; }
+      button { padding: 0.75rem 1.5rem; margin: 0.5rem 0.5rem 0.5rem 0; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; }
+      button:hover { background: #0052a3; }
+      button.secondary { background: #6c757d; }
+      button.secondary:hover { background: #5a6268; }
+      .result { margin-top: 1rem; padding: 1rem; border-radius: 4px; }
+      .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+      .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+      .stats { background: #e2e3e5; border: 1px solid #d3d3d4; padding: 1rem; margin: 1rem 0; border-radius: 4px; }
+      pre { background: #f8f9fa; padding: 0.5rem; border-radius: 4px; overflow-x: auto; }
+    </style>
+  </head>
+  <body>
+    <nav><a href="/">← Back to Home</a></nav>
+    <h1>Cache Invalidation</h1>
+    
+    <div class="stats">
+      <h3>Cache Statistics</h3>
+      <button type="button" onclick="loadStats()">Load Current Stats</button>
+      <div id="stats-result"></div>
+    </div>
+
+    <h2>Invalidate by Tag</h2>
+    <form onsubmit="invalidate(event, 'tag')">
+      <div class="form-group">
+        <label for="tag-input">Cache Tag:</label>
+        <input type="text" id="tag-input" placeholder="e.g., group:a, group:b" />
+        <p><small>Examples: <code>group:a</code>, <code>group:b</code></small></p>
+      </div>
+      <button type="submit">Invalidate by Tag</button>
+    </form>
+
+    <h2>Invalidate by Path</h2>
+    <form onsubmit="invalidate(event, 'path')">
+      <div class="form-group">
+        <label for="path-input">URL Path:</label>
+        <input type="text" id="path-input" placeholder="e.g., /swr, /etag, /tags/" />
+        <p><small>Examples: <code>/swr</code> (exact), <code>/tags/</code> (path prefix)</small></p>
+      </div>
+      <button type="submit">Invalidate by Path</button>
+    </form>
+
+    <h2>Clear All Cache</h2>
+    <form onsubmit="invalidate(event, 'all')">
+      <p><strong>Warning:</strong> This will clear the entire cache.</p>
+      <button type="submit" class="secondary">Clear All Cache</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+      async function invalidate(event, type) {
+        event.preventDefault();
+        
+        let value = '';
+        if (type === 'tag') {
+          value = document.getElementById('tag-input').value;
+        } else if (type === 'path') {
+          value = document.getElementById('path-input').value;
+        }
+
+        const formData = new FormData();
+        formData.append('type', type);
+        if (value) {
+          formData.append('value', value);
+        }
+
+        try {
+          const response = await fetch('/api/invalidate', {
+            method: 'POST',
+            body: formData
+          });
+          
+          const result = await response.json();
+          showResult(result, response.ok);
+          
+          if (result.success) {
+            // Reload stats after successful invalidation
+            setTimeout(loadStats, 500);
+          }
+        } catch (error) {
+          showResult({ success: false, error: 'Network error' }, false);
+        }
+      }
+
+      async function loadStats() {
+        try {
+          const response = await fetch('/api/invalidate');
+          const result = await response.json();
+          
+          if (result.success) {
+            const statsDiv = document.getElementById('stats-result');
+            statsDiv.innerHTML = `<pre>${JSON.stringify(result.stats, null, 2)}</pre>`;
+          } else {
+            document.getElementById('stats-result').innerHTML = 
+              `<div class="error">Failed to load stats: ${result.error}</div>`;
+          }
+        } catch (error) {
+          document.getElementById('stats-result').innerHTML = 
+            `<div class="error">Network error loading stats</div>`;
+        }
+      }
+
+      function showResult(result, ok) {
+        const resultDiv = document.getElementById('result');
+        const className = ok && result.success ? 'success' : 'error';
+        
+        let message = '';
+        if (result.success && typeof result.count === 'number') {
+          message = `Success! Invalidated ${result.count} cache entries.`;
+        } else if (result.error) {
+          message = `Error: ${result.error}`;
+        } else {
+          message = result.success ? 'Operation completed successfully.' : 'Operation failed.';
+        }
+        
+        resultDiv.innerHTML = `<div class="result ${className}">${message}</div>`;
+        
+        // Clear the result after 5 seconds
+        setTimeout(() => {
+          resultDiv.innerHTML = '';
+        }, 5000);
+      }
+
+      // Load stats on page load
+      window.addEventListener('load', loadStats);
+    </script>
+  </body>
+</html>

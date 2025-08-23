@@ -1,0 +1,36 @@
+---
+const routes = [
+  ["/swr", "SWR JSON endpoint (background revalidation)"],
+  ["/blocking", "Blocking SWR endpoint"],
+  ["/off", "SWR disabled endpoint"],
+  ["/etag", "ETag + conditional requests"],
+  ["/vary-lang", "Cache-Vary header example (Accept-Language)"],
+  ["/vary-mixed", "Cache-Vary header with multiple dimensions"],
+  ["/tags/a", "Tag A (cache-tag: group:a)"],
+  ["/tags/b", "Tag B (cache-tag: group:b)"],
+  ["/invalidate", "Manual invalidation trigger placeholder"],
+];
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Cache Handlers Demo - Features</title>
+  </head>
+  <body>
+    <h1>Cache Handlers Demo Features</h1>
+    <nav><a href="/">Home</a></nav>
+    <ul>
+      {
+        routes.map(([path, label]) => (
+          <li>
+            <a href={path}>{label}</a>
+          </li>
+        ))
+      }
+    </ul>
+    <p>
+      Inspect the <code>Cache-Status</code> header to see hits, misses, stale behaviour.
+    </p>
+  </body>
+</html>

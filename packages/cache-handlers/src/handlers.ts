@@ -1,26 +1,34 @@
 import type {
 	CacheConfig,
 	CacheHandle,
-	CacheInvokeOptions,
 	HandlerFunction,
+	MinimalRequest,
+	MinimalResponse,
 	SWRPolicy,
 } from "./types.ts";
 import { readFromCache } from "./read.ts";
 import { writeToCache } from "./write.ts";
 
-// Public cache handler
-export function createCacheHandler(options: CacheConfig = {}): CacheHandle {
-	const baseHandler: HandlerFunction | undefined = options.handler;
+export function createCacheHandler<
+	TRequest extends MinimalRequest = Request,
+	TResponse extends MinimalResponse = Response,
+>(
+	options: CacheConfig<TRequest, TResponse> = {},
+): CacheHandle<TRequest, TResponse> {
+	const baseHandler: HandlerFunction<TRequest, TResponse> | undefined =
+		options.handler;
 
-	const handle: CacheHandle = async (
-		request: Request,
-		callOpts: CacheInvokeOptions = {},
-	): Promise<Response> => {
+	const handle: CacheHandle<TRequest, TResponse> = async (
+		request,
+		callOpts = {},
+	): Promise<TResponse> => {
 		// Only cache GET
 		if (request.method !== "GET") {
 			const handler = callOpts.handler || baseHandler;
 			if (!handler) {
-				return new Response("No handler provided", { status: 500 });
+				return new Response("No handler provided", {
+					status: 500,
+				}) as unknown as TResponse;
 			}
 			return handler(request, { mode: "miss", background: false });
 		}
@@ -80,7 +88,7 @@ export function createCacheHandler(options: CacheConfig = {}): CacheHandle {
 					// Treat stale-while-revalidate as disabled: delete and proceed as miss
 					try {
 						await caches.open(options.cacheName || "cache-primitives-default")
-							.then((c) => c.delete(request));
+							.then((c) => c.delete(request as unknown as Request));
 					} catch (_) {
 						// ignore
 					}
@@ -94,7 +102,7 @@ export function createCacheHandler(options: CacheConfig = {}): CacheHandle {
 					// continue to miss logic
 				} else {
 					if (enableStatus) {
-						const headers = new Headers(cached.headers);
+						const headers = new Headers(cached.headers as HeadersInit);
 						const parts = [cacheStatusName, "hit", "stale"];
 						const expires = headers.get("expires");
 						if (expires) {
@@ -108,13 +116,13 @@ export function createCacheHandler(options: CacheConfig = {}): CacheHandle {
 							status: cached.status,
 							statusText: cached.statusText,
 							headers,
-						});
+						}) as unknown as TResponse;
 					}
 					return cached;
 				}
 			} else {
 				if (enableStatus) {
-					const headers = new Headers(cached.headers);
+					const headers = new Headers(cached.headers as HeadersInit);
 					const parts = [cacheStatusName, "hit"];
 					const expires = headers.get("expires");
 					if (expires) {
@@ -128,7 +136,7 @@ export function createCacheHandler(options: CacheConfig = {}): CacheHandle {
 						status: cached.status,
 						statusText: cached.statusText,
 						headers,
-					});
+					}) as unknown as TResponse;
 				}
 				return cached;
 			}
@@ -139,7 +147,7 @@ export function createCacheHandler(options: CacheConfig = {}): CacheHandle {
 		if (!handler) {
 			return new Response("Cache miss and no handler provided", {
 				status: 500,
-			});
+			}) as unknown as TResponse;
 		}
 		const response = await handler(request, {
 			mode: "miss",
@@ -147,7 +155,7 @@ export function createCacheHandler(options: CacheConfig = {}): CacheHandle {
 		});
 		const stored = await writeToCache(request, response, options);
 		if (enableStatus) {
-			const headers = new Headers(stored.headers);
+			const headers = new Headers(stored.headers as HeadersInit);
 			const parts = [cacheStatusName, "miss"];
 			const expires = headers.get("expires");
 			if (expires) {
@@ -161,7 +169,7 @@ export function createCacheHandler(options: CacheConfig = {}): CacheHandle {
 				status: stored.status,
 				statusText: stored.statusText,
 				headers,
-			});
+			}) as unknown as TResponse;
 		}
 		return stored;
 	};

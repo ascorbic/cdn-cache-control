@@ -1,4 +1,4 @@
-import type { CacheConfig } from "./types.ts";
+import type { CacheConfig, MinimalRequest, MinimalResponse } from "./types.ts";
 import { defaultGetCacheKey, getCache, parseCacheControl } from "./utils.ts";
 import {
 	create304Response,
@@ -9,10 +9,13 @@ import { safeJsonParse } from "./errors.ts";
 
 const VARY_METADATA_KEY = "https://cache-internal/cache-vary-metadata";
 
-export async function readFromCache(
-	request: Request,
-	config: CacheConfig = {},
-): Promise<{ cached: Response | null; needsBackgroundRevalidation: boolean }> {
+export async function readFromCache<
+	TRequest extends MinimalRequest,
+	TResponse extends MinimalResponse,
+>(
+	request: TRequest,
+	config: CacheConfig<TRequest, TResponse> = {},
+): Promise<{ cached: TResponse | null; needsBackgroundRevalidation: boolean }> {
 	if (request.method !== "GET") {
 		return { cached: null, needsBackgroundRevalidation: false };
 	}
@@ -45,7 +48,8 @@ export async function readFromCache(
 		: undefined;
 	const cacheKey = await getCacheKey(request, varyArg);
 	const cacheRequest = new Request(cacheKey);
-	let cachedResponse: Response | null = (await cache.match(cacheKey)) ?? null;
+	let cachedResponse: TResponse | null =
+		(await cache.match(cacheKey) as unknown as TResponse) ?? null;
 	let needsBackgroundRevalidation = false;
 	if (cachedResponse) {
 		const expiresHeader = cachedResponse.headers.get("expires");

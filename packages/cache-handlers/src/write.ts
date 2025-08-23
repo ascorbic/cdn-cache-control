@@ -1,4 +1,4 @@
-import type { CacheConfig } from "./types.ts";
+import type { CacheConfig, MinimalRequest, MinimalResponse } from "./types.ts";
 import {
 	defaultGetCacheKey,
 	getCache,
@@ -12,11 +12,14 @@ import { updateTagMetadata, updateVaryMetadata } from "./metadata.ts";
 const METADATA_KEY = "https://cache-internal/cache-primitives-metadata";
 const VARY_METADATA_KEY = "https://cache-internal/cache-vary-metadata";
 
-export async function writeToCache(
-	request: Request,
-	response: Response,
-	config: CacheConfig = {},
-): Promise<Response> {
+export async function writeToCache<
+	TRequest extends MinimalRequest,
+	TResponse extends MinimalResponse,
+>(
+	request: TRequest,
+	response: TResponse,
+	config: CacheConfig<TRequest, TResponse> = {},
+): Promise<TResponse> {
 	if (request.method !== "GET") {
 		return response;
 	}
@@ -24,7 +27,7 @@ export async function writeToCache(
 	const cache = await getCache(config);
 	const cacheInfo = parseResponseHeaders(response, config);
 	if (!cacheInfo.shouldCache) {
-		return removeHeaders(response, cacheInfo.headersToRemove);
+		return removeHeaders<TResponse>(response, cacheInfo.headersToRemove);
 	}
 	const cacheKey = await getCacheKey(request, cacheInfo.vary);
 	const responseToCache = response.clone();

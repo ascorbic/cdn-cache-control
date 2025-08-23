@@ -14,7 +14,7 @@
  * };
  * ```
  */
-export interface CacheConfig {
+export interface CacheConfig<TRequest, TResponse> {
 	/**
 	 * Cache instance to use instead of opening by name
 	 * @default `caches.default` if available
@@ -31,7 +31,7 @@ export interface CacheConfig {
 	 * Custom function to generate a cache key from a request.
 	 * This allows for more advanced cache key generation strategies.
 	 */
-	getCacheKey?: (request: Request) => Promise<string> | string;
+	getCacheKey?: (request: TRequest) => Promise<string> | string;
 
 	/**
 	 * Features to enable/disable
@@ -95,7 +95,7 @@ export interface CacheConfig {
 	maxTtl?: number;
 
 	/** Default handler used on cache misses and background revalidation */
-	handler?: HandlerFunction;
+	handler?: HandlerFunction<TRequest, TResponse>;
 
 	/** SWR policy controlling how stale responses are revalidated */
 	swr?: SWRPolicy;
@@ -103,6 +103,36 @@ export interface CacheConfig {
 	/** Background scheduler for SWR revalidation tasks. If absent, queueMicrotask is used. */
 	runInBackground?: (p: Promise<unknown>) => void;
 }
+
+export type MinimalHeaders =
+	& Pick<
+		Headers,
+		| "get"
+		| "set"
+		| "delete"
+		| "has"
+		| "append"
+	>
+	& {
+		forEach: (
+			callback: (value: string, key: string, parent: MinimalHeaders) => void,
+			// deno-lint-ignore no-explicit-any
+			thisArg: any,
+		) => void;
+		entries(): IterableIterator<[string, string]>;
+		keys(): IterableIterator<string>;
+		values(): IterableIterator<string>;
+		[Symbol.iterator](): IterableIterator<[string, string]>;
+	};
+export type MinimalRequest = Pick<Request, "method" | "url"> & {
+	headers: MinimalHeaders;
+};
+export type MinimalResponse =
+	& Pick<
+		Response,
+		"status" | "statusText" | "body" | "clone"
+	>
+	& { headers: MinimalHeaders };
 
 /**
  * Configuration for HTTP conditional requests support.
@@ -283,10 +313,10 @@ export interface HandlerInfo {
 /**
  * User provided handler function.
  */
-export type HandlerFunction = (
-	request: Request,
+export type HandlerFunction<TRequest, TResponse> = (
+	request: TRequest,
 	info: HandlerInfo,
-) => Promise<Response> | Response;
+) => Promise<TResponse> | TResponse;
 
 /**
  * SWR policy controlling how stale-while-revalidate is executed.
@@ -298,8 +328,8 @@ export type SWRPolicy = "background" | "blocking" | "off";
  * handler settings. SWR behaviour beyond simple miss handling will be
  * added in subsequent iterations.
  */
-export interface CacheInvokeOptions {
-	handler?: HandlerFunction;
+export interface CacheInvokeOptions<TRequest, TResponse> {
+	handler?: HandlerFunction<TRequest, TResponse>;
 	runInBackground?: (p: Promise<unknown>) => void;
 	swr?: SWRPolicy;
 }
@@ -308,10 +338,10 @@ export interface CacheInvokeOptions {
  * Bare cache handle function returned by createCacheHandler.
  * Performs read -> (miss -> handler -> write) flow. No attached methods.
  */
-export type CacheHandle = (
-	request: Request,
-	options?: CacheInvokeOptions,
-) => Promise<Response>;
+export type CacheHandle<TRequest, TResponse> = (
+	request: TRequest,
+	options?: CacheInvokeOptions<TRequest, TResponse>,
+) => Promise<TResponse>;
 
 /**
  * Options for cache invalidation operations.

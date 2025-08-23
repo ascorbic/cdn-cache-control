@@ -2,6 +2,8 @@ import type {
 	CacheConfig,
 	CacheVary,
 	InvalidationOptions,
+	MinimalRequest,
+	MinimalResponse,
 	ParsedCacheHeaders,
 } from "./types.ts";
 
@@ -104,9 +106,12 @@ export function parseCacheVaryHeader(headerValue: string): CacheVary {
 	return vary;
 }
 
-export function parseResponseHeaders(
-	response: Response,
-	config: CacheConfig = {},
+export function parseResponseHeaders<
+	TRequest,
+	TResponse extends MinimalResponse,
+>(
+	response: TResponse,
+	config: CacheConfig<TRequest, TResponse> = {},
 ): ParsedCacheHeaders {
 	const result: ParsedCacheHeaders = {
 		shouldCache: false,
@@ -213,7 +218,10 @@ export function parseResponseHeaders(
 	return result;
 }
 
-export function defaultGetCacheKey(request: Request, vary?: CacheVary): string {
+export function defaultGetCacheKey<TRequest extends MinimalRequest>(
+	request: TRequest,
+	vary?: CacheVary,
+): string {
 	// Only support GET requests for caching
 	if (request.method !== "GET") {
 		// Return a cache key that will never match anything, but don't throw
@@ -283,7 +291,10 @@ export function defaultGetCacheKey(request: Request, vary?: CacheVary): string {
 	return key;
 }
 
-function getCookieValue(request: Request, cookieName: string): string | null {
+function getCookieValue<TRequest extends MinimalRequest>(
+	request: TRequest,
+	cookieName: string,
+): string | null {
 	const cookieHeader = request.headers.get("cookie");
 	if (!cookieHeader) {
 		return null;
@@ -313,10 +324,10 @@ function getCookieValue(request: Request, cookieName: string): string | null {
 	return null;
 }
 
-export function removeHeaders(
-	response: Response,
+export function removeHeaders<TResponse extends MinimalResponse>(
+	response: TResponse,
 	headersToRemove: string[],
-): Response {
+): TResponse {
 	if (headersToRemove.length === 0) {
 		return response;
 	}
@@ -330,7 +341,7 @@ export function removeHeaders(
 		status: response.status,
 		statusText: response.statusText,
 		headers: newHeaders,
-	});
+	}) as unknown as TResponse;
 }
 
 export function isCacheValid(expiresHeader: string | null): boolean {
