@@ -2,8 +2,6 @@ import type {
 	CacheConfig,
 	CacheVary,
 	InvalidationOptions,
-	MinimalRequest,
-	MinimalResponse,
 	ParsedCacheHeaders,
 } from "./types.ts";
 
@@ -16,22 +14,20 @@ export async function getCache(
 	if (options.cache) {
 		return options.cache;
 	}
-	// 2. Explicit cacheName provided
+
+	if (!("caches" in globalThis)) {
+		throw new Error(
+			"Cache API not available in this environment. Please provide a cache instance in options.",
+		);
+	}
+
 	if (options.cacheName) {
+		// 2. Explicit cacheName provided
 		return await caches.open(options.cacheName);
 	}
-	// 3. Use platform default cache if available (e.g. Cloudflare Workers caches.default)
-	try {
-		// deno-lint-ignore no-explicit-any
-		const anyCaches: any = caches as unknown;
-		if (anyCaches && typeof anyCaches === "object" && "default" in anyCaches) {
-			const def = (anyCaches as { default?: Cache }).default;
-			if (def) {
-				return def;
-			}
-		}
-	} catch {
-		// ignore and fall back
+	if ("default" in caches && caches.default) {
+		// 3. Use caches.default if available (e.g. Cloudflare Workers)
+		return caches.default as Cache;
 	}
 	// 4. Fallback to opening (and potentially creating) a named cache
 	return await caches.open(DEFAULT_CACHE_NAME);
@@ -106,11 +102,8 @@ export function parseCacheVaryHeader(headerValue: string): CacheVary {
 	return vary;
 }
 
-export function parseResponseHeaders<
-	TRequest,
-	TResponse extends MinimalResponse,
->(
-	response: TResponse,
+export function parseResponseHeaders<TRequest, TResponse>(
+	response: Response,
 	config: CacheConfig<TRequest, TResponse> = {},
 ): ParsedCacheHeaders {
 	const result: ParsedCacheHeaders = {
@@ -218,8 +211,8 @@ export function parseResponseHeaders<
 	return result;
 }
 
-export function defaultGetCacheKey<TRequest extends MinimalRequest>(
-	request: TRequest,
+export function defaultGetCacheKey(
+	request: Request,
 	vary?: CacheVary,
 ): string {
 	// Only support GET requests for caching
@@ -291,8 +284,8 @@ export function defaultGetCacheKey<TRequest extends MinimalRequest>(
 	return key;
 }
 
-function getCookieValue<TRequest extends MinimalRequest>(
-	request: TRequest,
+function getCookieValue(
+	request: Request,
 	cookieName: string,
 ): string | null {
 	const cookieHeader = request.headers.get("cookie");
@@ -324,10 +317,10 @@ function getCookieValue<TRequest extends MinimalRequest>(
 	return null;
 }
 
-export function removeHeaders<TResponse extends MinimalResponse>(
-	response: TResponse,
+export function removeHeaders(
+	response: Response,
 	headersToRemove: string[],
-): TResponse {
+): Response {
 	if (headersToRemove.length === 0) {
 		return response;
 	}
@@ -341,7 +334,7 @@ export function removeHeaders<TResponse extends MinimalResponse>(
 		status: response.status,
 		statusText: response.statusText,
 		headers: newHeaders,
-	}) as unknown as TResponse;
+	});
 }
 
 export function isCacheValid(expiresHeader: string | null): boolean {

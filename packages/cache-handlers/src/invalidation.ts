@@ -36,8 +36,8 @@ export async function invalidateByTag(
 ): Promise<number> {
 	const debug = createDebugLogger(options.debug);
 	const validatedTag = validateCacheTag(tag);
-	debug.log('invalidation', `Starting invalidation by tag: ${validatedTag}`);
-	
+	debug.log("invalidation", `Starting invalidation by tag: ${validatedTag}`);
+
 	const cache = await getCache(options);
 	const metadataResponse = await cache.match(METADATA_KEY);
 
@@ -68,7 +68,7 @@ export async function invalidateByTag(
 		await cache.put(METADATA_KEY, Response.json(metadata));
 	}
 
-	debug.logInvalidation('tag', validatedTag, deletedCount);
+	debug.logInvalidation("tag", validatedTag, deletedCount);
 	return deletedCount;
 }
 
@@ -101,8 +101,8 @@ export async function invalidateByPath(
 	options: InvalidationOptions = {},
 ): Promise<number> {
 	const debug = createDebugLogger(options.debug);
-	debug.log('invalidation', `Starting invalidation by path: ${path}`);
-	
+	debug.log("invalidation", `Starting invalidation by path: ${path}`);
+
 	const cache = await getCache(options);
 
 	// In Deno, we can't enumerate cache keys, so we work with metadata
@@ -167,7 +167,7 @@ export async function invalidateByPath(
 		await cache.put(METADATA_KEY, Response.json(updatedMetadata));
 	}
 
-	debug.logInvalidation('path', path, deletedCount);
+	debug.logInvalidation("path", path, deletedCount);
 	return deletedCount;
 }
 
@@ -199,8 +199,8 @@ export async function invalidateAll(
 	options: InvalidationOptions = {},
 ): Promise<number> {
 	const debug = createDebugLogger(options.debug);
-	debug.log('invalidation', 'Starting invalidation of all cache entries');
-	
+	debug.log("invalidation", "Starting invalidation of all cache entries");
+
 	const cache = await getCache(options);
 
 	// In Deno, we can't enumerate cache keys, so we work with metadata
@@ -242,7 +242,7 @@ export async function invalidateAll(
 	// Clear metadata
 	await cache.delete(METADATA_KEY);
 
-	debug.logInvalidation('all', 'all entries', deletedCount);
+	debug.logInvalidation("all", "all entries", deletedCount);
 	return deletedCount;
 }
 
@@ -279,8 +279,8 @@ export async function getCacheStats(
 	options: InvalidationOptions = {},
 ): Promise<{ totalEntries: number; entriesByTag: Record<string, number> }> {
 	const debug = createDebugLogger(options.debug);
-	debug.log('stats', 'Getting cache statistics');
-	
+	debug.log("stats", "Getting cache statistics");
+
 	const cache = await getCache(options);
 	const metadataResponse = await cache.match(METADATA_KEY);
 	if (!metadataResponse) {
@@ -312,7 +312,12 @@ export async function getCacheStats(
 	}
 
 	const stats = { totalEntries: uniqueKeys.size, entriesByTag };
-	debug.log('stats', `Cache statistics: ${stats.totalEntries} total entries, ${Object.keys(stats.entriesByTag).length} tags`);
+	debug.log(
+		"stats",
+		`Cache statistics: ${stats.totalEntries} total entries, ${
+			Object.keys(stats.entriesByTag).length
+		} tags`,
+	);
 	return stats;
 }
 

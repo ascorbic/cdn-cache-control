@@ -110,36 +110,6 @@ export interface CacheConfig<TRequest, TResponse> {
 	runInBackground?: (p: Promise<unknown>) => void;
 }
 
-export type MinimalHeaders =
-	& Pick<
-		Headers,
-		| "get"
-		| "set"
-		| "delete"
-		| "has"
-		| "append"
-	>
-	& {
-		forEach: (
-			callback: (value: string, key: string, parent: MinimalHeaders) => void,
-			// deno-lint-ignore no-explicit-any
-			thisArg: any,
-		) => void;
-		entries(): IterableIterator<[string, string]>;
-		keys(): IterableIterator<string>;
-		values(): IterableIterator<string>;
-		[Symbol.iterator](): IterableIterator<[string, string]>;
-	};
-export type MinimalRequest = Pick<Request, "method" | "url"> & {
-	headers: MinimalHeaders;
-};
-export type MinimalResponse =
-	& Pick<
-		Response,
-		"status" | "statusText" | "body" | "clone"
-	>
-	& { headers: MinimalHeaders };
-
 /**
  * Configuration for HTTP conditional requests support.
  *
@@ -149,7 +119,7 @@ export type MinimalResponse =
  *   etag: 'generate', // Generate ETags for responses without them
  *   lastModified: true, // Support Last-Modified headers
  *   weakValidation: true, // Support weak ETag validation
- *   etagGenerator: (response) => generateMD5Hash(response.body)
+ *   etagGenerator: (response) => generateMD5Hash(response.clone().text()) // Custom ETag generator
  * };
  * ```
  */
@@ -411,5 +381,5 @@ export interface DebugConfig {
 	 * - 'verbose': Log detailed information including headers, keys, and metadata
 	 * @default 'basic'
 	 */
-	logLevel?: 'basic' | 'verbose';
+	logLevel?: "basic" | "verbose";
 }

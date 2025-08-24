@@ -1,19 +1,20 @@
 import { App } from "astro/app";
 import type { SSRManifest } from "astro";
 import { handle, type Runtime } from "@astrojs/cloudflare/handler";
-import type { ExportedHandlerFetchHandler } from "@cloudflare/workers-types";
+import type {
+	ExportedHandler,
+	Response as CFResponse,
+} from "@cloudflare/workers-types";
 import { createCacheHandler } from "cache-handlers";
-
-type CFRequest = Parameters<ExportedHandlerFetchHandler>[0];
 
 export function createExports(manifest: SSRManifest) {
 	const app = new App(manifest);
 	return {
 		default: {
 			async fetch(
-				request: CFRequest,
-				env: Runtime["runtime"]["env"],
-				ctx: Runtime["runtime"]["ctx"],
+				request,
+				env,
+				ctx,
 			) {
 				if (request.method !== "GET") {
 					// Directly invoke Astro for non-GET (no cache)
@@ -23,14 +24,18 @@ export function createExports(manifest: SSRManifest) {
 						request,
 						env,
 						ctx,
-					);
+					) as unknown as Promise<CFResponse>;
 				}
 				const url = new URL(request.url);
 				const cacheHandle = createCacheHandler<
-					CFRequest
+					typeof request,
+					CFResponse
 				>({
 					swr: "background",
-					handler: (req) => handle(manifest, app, req, env, ctx),
+					handler: (req) =>
+						handle(manifest, app, req, env, ctx) as unknown as Promise<
+							CFResponse
+						>,
 					features: {
 						conditionalRequests: { etag: "generate" },
 						cacheStatusHeader: "demo-cache",
@@ -53,8 +58,10 @@ export function createExports(manifest: SSRManifest) {
 						runInBackground: ctx.waitUntil.bind(ctx),
 					});
 				}
-				return cacheHandle(request, { runInBackground: ctx.waitUntil.bind(ctx) });
+				return cacheHandle(request, {
+					runInBackground: ctx.waitUntil.bind(ctx),
+				});
 			},
-		},
+		} satisfies ExportedHandler<Runtime["runtime"]["env"]>,
 	};
 }

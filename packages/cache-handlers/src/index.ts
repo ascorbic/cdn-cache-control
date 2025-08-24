@@ -8,27 +8,10 @@ export {
 	regenerateCacheStats,
 } from "./invalidation.ts";
 
-export {
-	compareETags,
-	create304Response,
-	generateETag,
-	getDefaultConditionalConfig,
-	parseETag,
-	validateConditionalRequest,
-} from "./conditional.ts";
-
-export {
-	DebugLogger,
-	createDebugLogger,
-} from "./debug.ts";
-
 export type {
 	CacheConfig,
 	CacheHandle,
-	CacheInvokeOptions,
 	ConditionalRequestConfig,
-	ConditionalValidationResult,
-	DebugConfig,
 	HandlerFunction,
 	HandlerInfo,
 	HandlerMode,

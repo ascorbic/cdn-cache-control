@@ -196,32 +196,6 @@ createCacheHandler({
 });
 ```
 
-### Stand‑alone Helpers
-
-Exported for advanced/manual workflows:
-
-```ts
-import {
-	compareETags,
-	create304Response,
-	generateETag,
-	getDefaultConditionalConfig,
-	parseETag,
-	validateConditionalRequest,
-} from "cache-handlers";
-```
-
-Example manual validation:
-
-```ts
-const cached = new Response("data", {
-	headers: { etag: await generateETag(new Response("data")) },
-});
-const validation = validateConditionalRequest(request, cached);
-if (validation.shouldReturn304) {
-	return create304Response(cached);
-}
-```
 
 ## Backend-Driven Variations (`Cache-Vary` – custom header)
 
@@ -273,9 +247,7 @@ Notes:
 import type {
 	CacheConfig,
 	CacheHandle,
-	CacheInvokeOptions,
 	ConditionalRequestConfig,
-	ConditionalValidationResult,
 	HandlerFunction,
 	HandlerInfo,
 	HandlerMode,
@@ -320,7 +292,6 @@ Different platforms implement the Web Standard `CacheStorage` API with varying c
 // ✅ Works via undici polyfill
 // ⚠️  In-memory only by default - not persistent across restarts
 // ⚠️  Limited to single process - no cross-process sharing
-// 💡 Consider using Redis or similar for production Node.js deployments
 ```
 
 #### Netlify Edge Functions

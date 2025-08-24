@@ -11,8 +11,6 @@
 import type {
 	ConditionalRequestConfig,
 	ConditionalValidationResult,
-	MinimalRequest,
-	MinimalResponse,
 } from "./types.ts";
 
 /**
@@ -143,12 +141,9 @@ export function parseHttpDate(dateString: string): Date | null {
  * @param config - Conditional request configuration
  * @returns Validation result indicating whether to return 304
  */
-export function validateConditionalRequest<
-	TRequest extends MinimalRequest,
-	TResponse extends MinimalResponse,
->(
-	request: TRequest,
-	cachedResponse: TResponse,
+export function validateConditionalRequest(
+	request: Request,
+	cachedResponse: Response,
 	config: ConditionalRequestConfig = {},
 ): ConditionalValidationResult {
 	const ifNoneMatch = request.headers.get("if-none-match");
@@ -220,9 +215,9 @@ export function validateConditionalRequest<
  * @param cachedResponse - The cached response to base the 304 response on
  * @returns A 304 Not Modified response
  */
-export function create304Response<TResponse extends MinimalResponse>(
-	cachedResponse: TResponse,
-): TResponse {
+export function create304Response(
+	cachedResponse: Response,
+): Response {
 	const headers = new Headers();
 
 	// Headers that MUST be included if they would have been sent in a 200 response
@@ -270,7 +265,7 @@ export function create304Response<TResponse extends MinimalResponse>(
 		status: 304,
 		statusText: "Not Modified",
 		headers,
-	}) as unknown as TResponse;
+	});
 }
 
 /**
