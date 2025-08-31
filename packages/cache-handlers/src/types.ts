@@ -271,6 +271,11 @@ export interface ParsedCacheHeaders {
 	 * Whether ETag should be generated if not present
 	 */
 	shouldGenerateETag?: boolean;
+
+	/**
+	 * Filtered cache-control header value after removing used directives
+	 */
+	filteredCacheControl?: string;
 }
 
 /**

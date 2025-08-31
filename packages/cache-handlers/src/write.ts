@@ -36,7 +36,7 @@ export async function writeToCache(
 			noCache: cacheInfo.noCache,
 			noStore: cacheInfo.noStore,
 		});
-		return removeHeaders(response, cacheInfo.headersToRemove);
+		return removeHeaders(response, cacheInfo.headersToRemove, cacheInfo.filteredCacheControl);
 	}
 	const cacheKey = await getCacheKey(request, cacheInfo.vary);
 	debug.logCacheWrite(request.url, cacheInfo.ttl, cacheInfo.tags);
@@ -83,5 +83,5 @@ export async function writeToCache(
 			cacheInfo.vary,
 		);
 	}
-	return removeHeaders(response, cacheInfo.headersToRemove);
+	return removeHeaders(response, cacheInfo.headersToRemove, cacheInfo.filteredCacheControl);
 }

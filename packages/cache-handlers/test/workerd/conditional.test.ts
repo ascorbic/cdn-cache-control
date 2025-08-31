@@ -188,7 +188,7 @@ describe("Conditional Requests - Workerd Environment", () => {
 				handler: () =>
 					new Response("body", {
 						headers: {
-							"cache-control": "public, max-age=3600",
+							"cdn-cache-control": "public, max-age=3600",
 							"content-type": "application/json",
 							server: "cloudflare",
 						},
@@ -209,7 +209,7 @@ describe("Conditional Requests - Workerd Environment", () => {
 			const firstHandler = vi.fn(() =>
 				new Response("fresh", {
 					headers: {
-						"cache-control": "public, max-age=3600",
+						"cdn-cache-control": "public, max-age=3600",
 						"content-type": "application/json",
 					},
 				})
@@ -260,7 +260,7 @@ describe("Conditional Requests - Workerd Environment", () => {
 					}, {
 						headers: {
 							"content-type": "application/json",
-							"cache-control": "public, max-age=300",
+							"cdn-cache-control": "public, max-age=300",
 							etag: '"cf-generated-etag"',
 							server: "cloudflare",
 							"cf-cache-status": "MISS",

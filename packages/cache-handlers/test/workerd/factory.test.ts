@@ -15,7 +15,7 @@ describe("Unified Cache Handler - Workerd Environment", () => {
 			Promise.resolve(
 				new Response("workerd integration test data", {
 					headers: {
-						"cache-control": "max-age=3600, public",
+						"cdn-cache-control": "max-age=3600, public",
 						"content-type": "application/json",
 						"cache-tag": "integration:workerd",
 						server: "workerd/1.0",
@@ -76,7 +76,7 @@ describe("Unified Cache Handler - Workerd Environment", () => {
 					}, {
 						headers: {
 							"content-type": "application/json",
-							"cache-control": "public, max-age=300",
+							"cdn-cache-control": "public, max-age=300",
 							"cache-tag": "api:data",
 							"x-origin": "cloudflare-worker",
 						},

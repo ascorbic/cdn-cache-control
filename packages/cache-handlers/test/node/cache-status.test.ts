@@ -7,7 +7,7 @@ function makeResponse(body: string, cacheControl: string) {
 
 describe("Cache-Status header", () => {
 	it("emits miss then hit with default cache name when enabled as boolean", async () => {
-		const handler = () => makeResponse("ok", "max-age=60");
+		const handler = () => new Response("ok", { headers: { "cdn-cache-control": "max-age=60" } });
 		const handle = createCacheHandler({
 			handler,
 			features: { cacheStatusHeader: true },
@@ -22,7 +22,7 @@ describe("Cache-Status header", () => {
 	});
 
 	it("uses custom cache name when string provided", async () => {
-		const handler = () => makeResponse("custom", "max-age=30");
+		const handler = () => new Response("custom", { headers: { "cdn-cache-control": "max-age=30" } });
 		const handle = createCacheHandler({
 			handler,
 			features: { cacheStatusHeader: "edge-cache" },

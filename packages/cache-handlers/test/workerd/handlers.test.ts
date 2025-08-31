@@ -13,7 +13,7 @@ describe("Cache Handler - Workerd Environment", () => {
 			const missHandler = vi.fn(() =>
 				new Response("fresh", {
 					headers: {
-						"cache-control": "max-age=60, public",
+						"cdn-cache-control": "max-age=60, public",
 						"cache-tag": "x",
 					},
 				})
@@ -65,7 +65,7 @@ describe("Cache Handler - Workerd Environment", () => {
 					new Response("cloudflare data", {
 						status: 200,
 						headers: {
-							"cache-control": "max-age=1800, public",
+							"cdn-cache-control": "max-age=1800, public",
 							"cache-tag": "cloudflare",
 							"CF-Cache-Status": "MISS",
 						},

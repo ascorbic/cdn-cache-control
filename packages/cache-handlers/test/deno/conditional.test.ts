@@ -1,4 +1,4 @@
-import { assertEquals, assertExists } from "jsr:@std/assert";
+import { assert, assertEquals, assertExists } from "jsr:@std/assert";
 import {
 	compareETags,
 	create304Response,
@@ -20,8 +20,8 @@ Deno.test("Conditional Requests - ETag generation", async () => {
 
 	assertExists(etag);
 	assertEquals(typeof etag, "string");
-	assertEquals(etag.startsWith('"'), true);
-	assertEquals(etag.endsWith('"'), true);
+	assert(etag.startsWith('"'));
+	assert(etag.endsWith('"'));
 });
 
 Deno.test("Conditional Requests - ETag parsing", () => {
@@ -33,7 +33,7 @@ Deno.test("Conditional Requests - ETag parsing", () => {
 	// Weak ETag
 	const weakETag = parseETag('W/"abc123"');
 	assertEquals(weakETag.value, "abc123");
-	assertEquals(weakETag.weak, true);
+	assert(weakETag.weak);
 
 	// Empty ETag
 	const emptyETag = parseETag("");
@@ -61,13 +61,13 @@ Deno.test("Conditional Requests - ETag comparison", () => {
 Deno.test("Conditional Requests - If-None-Match parsing", () => {
 	// Single ETag
 	const single = parseIfNoneMatch('"abc123"');
-	assertEquals(Array.isArray(single), true);
+	assert(Array.isArray(single));
 	assertEquals((single as string[]).length, 1);
 	assertEquals((single as string[])[0], '"abc123"');
 
 	// Multiple ETags
 	const multiple = parseIfNoneMatch('"abc123", "def456", W/"ghi789"');
-	assertEquals(Array.isArray(multiple), true);
+	assert(Array.isArray(multiple));
 	assertEquals((multiple as string[]).length, 3);
 
 	// Wildcard
@@ -76,14 +76,14 @@ Deno.test("Conditional Requests - If-None-Match parsing", () => {
 
 	// Empty
 	const empty = parseIfNoneMatch("");
-	assertEquals(Array.isArray(empty), true);
+	assert(Array.isArray(empty));
 	assertEquals((empty as string[]).length, 0);
 });
 
 Deno.test("Conditional Requests - HTTP date parsing", () => {
 	const validDate = parseHttpDate("Wed, 21 Oct 2015 07:28:00 GMT");
 	assertExists(validDate);
-	assertEquals(validDate instanceof Date, true);
+	assert(validDate instanceof Date);
 
 	const invalidDate = parseHttpDate("invalid date");
 	assertEquals(invalidDate, null);
@@ -108,8 +108,8 @@ Deno.test("Conditional Requests - validateConditionalRequest with ETag", () => {
 
 	const result = validateConditionalRequest(request, cachedResponse);
 
-	assertEquals(result.matches, true);
-	assertEquals(result.shouldReturn304, true);
+	assert(result.matches);
+	assert(result.shouldReturn304);
 	assertEquals(result.matchedValidator, "etag");
 });
 
@@ -134,8 +134,8 @@ Deno.test(
 
 		const result = validateConditionalRequest(request, cachedResponse);
 
-		assertEquals(result.matches, true);
-		assertEquals(result.shouldReturn304, true);
+		assert(result.matches);
+		assert(result.shouldReturn304);
 		assertEquals(result.matchedValidator, "last-modified");
 	},
 );
@@ -250,7 +250,7 @@ Deno.test("Conditional Requests - unified handler ETag generation", async () => 
 			Promise.resolve(
 				new Response("etag-body", {
 					headers: {
-						"cache-control": "public, max-age=3600",
+						"cache-control": "public, s-maxage=3600",
 						"content-type": "application/json",
 					},
 				}),
@@ -267,9 +267,9 @@ Deno.test("Conditional Requests - unified handler ETag generation", async () => 
 Deno.test("Conditional Requests - Default configuration", () => {
 	const config = getDefaultConditionalConfig();
 
-	assertEquals(config.etag, true);
-	assertEquals(config.lastModified, true);
-	assertEquals(config.weakValidation, true);
+	assert(config.etag);
+	assert(config.lastModified);
+	assert(config.weakValidation);
 });
 
 Deno.test("Conditional Requests - disabled returns full response", async () => {

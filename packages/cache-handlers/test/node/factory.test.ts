@@ -15,7 +15,7 @@ describe("Unified Cache Handler - Node.js with undici", () => {
 		const handler = vi.fn(() =>
 			new Response("integration test data", {
 				headers: {
-					"cache-control": "max-age=3600, public",
+					"cdn-cache-control": "max-age=3600, public",
 					"cache-tag": "integration",
 					"content-type": "application/json",
 				},

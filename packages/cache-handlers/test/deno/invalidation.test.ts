@@ -1,4 +1,4 @@
-import { assertEquals } from "jsr:@std/assert";
+import { assertExists, assertEquals } from "jsr:@std/assert";
 import {
 	getCacheStats,
 	invalidateAll,
@@ -16,7 +16,7 @@ async function setupTestCache(): Promise<Cache> {
 		new Request("https://example.com/api/users"),
 		new Response("users data", {
 			headers: {
-				"cache-control": "max-age=3600, public",
+				"cache-control": "s-maxage=3600, public",
 				"cache-tag": "user, api",
 			},
 		}),
@@ -27,7 +27,7 @@ async function setupTestCache(): Promise<Cache> {
 		new Request("https://example.com/api/posts"),
 		new Response("posts data", {
 			headers: {
-				"cache-control": "max-age=3600, public",
+				"cache-control": "s-maxage=3600, public",
 				"cache-tag": "post, api",
 			},
 		}),
@@ -38,7 +38,7 @@ async function setupTestCache(): Promise<Cache> {
 		new Request("https://example.com/api/users/123"),
 		new Response("user 123 data", {
 			headers: {
-				"cache-control": "max-age=3600, public",
+				"cache-control": "s-maxage=3600, public",
 				"cache-tag": "user:123, user, api",
 			},
 		}),
@@ -49,7 +49,7 @@ async function setupTestCache(): Promise<Cache> {
 		new Request("https://example.com/static/image.jpg"),
 		new Response("image data", {
 			headers: {
-				"cache-control": "max-age=3600, public",
+				"cache-control": "s-maxage=3600, public",
 				"cache-tag": "static",
 			},
 		}),
@@ -80,7 +80,7 @@ Deno.test("invalidateByTag - removes entries with matching tag", async () => {
 	const postsResponse = await cache.match(
 		new Request("https://example.com/api/posts"),
 	);
-	assertEquals(postsResponse !== undefined, true);
+	assertExists(postsResponse);
 	if (postsResponse) {
 		await postsResponse.text(); // Clean up resource
 	}
@@ -88,7 +88,7 @@ Deno.test("invalidateByTag - removes entries with matching tag", async () => {
 	const staticResponse = await cache.match(
 		new Request("https://example.com/static/image.jpg"),
 	);
-	assertEquals(staticResponse !== undefined, true);
+	assertExists(staticResponse);
 	if (staticResponse) {
 		await staticResponse.text(); // Clean up resource
 	}
@@ -108,7 +108,7 @@ Deno.test("invalidateByTag - returns 0 for non-existent tag", async () => {
 	const usersResponse = await cache.match(
 		new Request("https://example.com/api/users"),
 	);
-	assertEquals(usersResponse !== undefined, true);
+	assertExists(usersResponse);
 	if (usersResponse) {
 		await usersResponse.text(); // Clean up resource
 	}
@@ -138,7 +138,7 @@ Deno.test("invalidateByPath - removes entries with matching path", async () => {
 	const postsResponse = await cache.match(
 		new Request("https://example.com/api/posts"),
 	);
-	assertEquals(postsResponse !== undefined, true);
+	assertExists(postsResponse);
 	if (postsResponse) {
 		await postsResponse.text(); // Clean up resource
 	}
@@ -164,7 +164,7 @@ Deno.test("invalidateByPath - exact path match only", async () => {
 	const usersResponse = await cache.match(
 		new Request("https://example.com/api/users"),
 	);
-	assertEquals(usersResponse !== undefined, true);
+	assertExists(usersResponse);
 	if (usersResponse) {
 		await usersResponse.text(); // Clean up resource
 	}

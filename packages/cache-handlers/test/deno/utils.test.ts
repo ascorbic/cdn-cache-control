@@ -1,4 +1,4 @@
-import { assertArrayIncludes, assertEquals } from "jsr:@std/assert";
+import { assert, assertArrayIncludes, assertEquals } from "jsr:@std/assert";
 import {
 	defaultGetCacheKey,
 	isCacheValid,
@@ -12,7 +12,7 @@ import {
 Deno.test("parseCacheControl - simple directives", () => {
 	const result = parseCacheControl("max-age=3600, public");
 	assertEquals(result["max-age"], 3600);
-	assertEquals(result.public, true);
+	assert(result.public);
 });
 
 Deno.test("parseCacheControl - complex directives with quotes", () => {
@@ -21,13 +21,13 @@ Deno.test("parseCacheControl - complex directives with quotes", () => {
 	);
 	assertEquals(result["max-age"], 86400);
 	assertEquals(result["s-maxage"], 7200);
-	assertEquals(result["must-revalidate"], true);
+	assert(result["must-revalidate"]);
 });
 
 Deno.test("parseCacheControl - no-cache and private", () => {
 	const result = parseCacheControl("no-cache, private, max-age=0");
-	assertEquals(result["no-cache"], true);
-	assertEquals(result.private, true);
+	assert(result["no-cache"]);
+	assert(result.private);
 	assertEquals(result["max-age"], 0);
 });
 
@@ -48,13 +48,13 @@ Deno.test("parseCacheTags - empty tags filtered out", () => {
 
 Deno.test("parseResponseHeaders - cacheable response", () => {
 	const headers = new Headers({
-		"cache-control": "max-age=3600, public",
+		"cache-control": "s-maxage=3600, public",
 		"cache-tag": "user:123, post:456",
 	});
 	const response = new Response("test", { headers });
 
 	const result = parseResponseHeaders(response);
-	assertEquals(result.shouldCache, true);
+	assert(result.shouldCache);
 	assertEquals(result.ttl, 3600);
 	assertEquals(result.tags, ["user:123", "post:456"]);
 	assertEquals(result.isPrivate, false);
@@ -69,12 +69,12 @@ Deno.test("parseResponseHeaders - private response", () => {
 
 	const result = parseResponseHeaders(response);
 	assertEquals(result.shouldCache, false);
-	assertEquals(result.isPrivate, true);
+	assert(result.isPrivate);
 });
 
 Deno.test("parseResponseHeaders - CDN cache control overrides", () => {
 	const headers = new Headers({
-		"cache-control": "max-age=3600, public",
+		"cache-control": "s-maxage=3600, public",
 		"cdn-cache-control": "max-age=7200, private",
 	});
 	const response = new Response("test", { headers });
@@ -82,7 +82,7 @@ Deno.test("parseResponseHeaders - CDN cache control overrides", () => {
 	const result = parseResponseHeaders(response);
 	assertEquals(result.shouldCache, false);
 	assertEquals(result.ttl, 7200);
-	assertEquals(result.isPrivate, true);
+	assert(result.isPrivate);
 	assertArrayIncludes(result.headersToRemove, ["cdn-cache-control"]);
 });
 
@@ -98,13 +98,13 @@ Deno.test("parseResponseHeaders - with default TTL", () => {
 
 Deno.test("parseResponseHeaders - max TTL limit", () => {
 	const headers = new Headers({
-		"cache-control": "max-age=86400, public", // 24 hours
+		"cache-control": "s-maxage=86400, public", // 24 hours
 	});
 	const response = new Response("test", { headers });
 	const config = { maxTtl: 3600 }; // 1 hour limit
 
 	const result = parseResponseHeaders(response, config);
-	assertEquals(result.shouldCache, true);
+	assert(result.shouldCache);
 	assertEquals(result.ttl, 3600); // Limited to maxTtl
 });
 
@@ -175,8 +175,8 @@ Deno.test("removeHeaders - removes specified headers", () => {
 
 	const result = removeHeaders(response, ["cdn-cache-control", "cache-tag"]);
 
-	assertEquals(result.headers.has("cache-control"), true);
-	assertEquals(result.headers.has("content-type"), true);
+	assert(result.headers.has("cache-control"));
+	assert(result.headers.has("content-type"));
 	assertEquals(result.headers.has("cdn-cache-control"), false);
 	assertEquals(result.headers.has("cache-tag"), false);
 });
@@ -193,7 +193,7 @@ Deno.test("removeHeaders - no headers to remove", () => {
 
 Deno.test("isCacheValid - valid cache with expires header", () => {
 	const futureDate = new Date(Date.now() + 3600000); // 1 hour from now
-	assertEquals(isCacheValid(futureDate.toUTCString()), true);
+	assert(isCacheValid(futureDate.toUTCString()));
 });
 
 Deno.test("isCacheValid - expired cache with expires header", () => {
@@ -202,5 +202,5 @@ Deno.test("isCacheValid - expired cache with expires header", () => {
 });
 
 Deno.test("isCacheValid - no expires header", () => {
-	assertEquals(isCacheValid(null), true);
+	assert(isCacheValid(null));
 });

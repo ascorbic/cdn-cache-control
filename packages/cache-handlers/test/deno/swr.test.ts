@@ -1,4 +1,4 @@
-import { assertEquals, assertExists } from "jsr:@std/assert";
+import { assert, assertEquals, assertExists } from "jsr:@std/assert";
 import { spy } from "jsr:@std/testing/mock";
 import { describe, it } from "jsr:@std/testing/bdd";
 import { createCacheHandler } from "../../src/index.ts";
@@ -24,17 +24,17 @@ describe("Stale-While-Revalidate Support", () => {
 		});
 	}
 
-	function wait(ms: number) {
-		return new Promise((resolve) => setTimeout(resolve, ms));
+	function waitForNextTick() {
+		return new Promise<void>((resolve) => queueMicrotask(() => resolve()));
 	}
 
 	it("should parse stale-while-revalidate directive from cache-control", async () => {
-		const config: CacheConfig = { cacheName: testCacheName };
+		const config: CacheConfig<Request, Response> = { cacheName: testCacheName };
 
 		const request = new Request("https://example.com/test");
 		const response = createTestResponse(
 			"content",
-			"max-age=1, stale-while-revalidate=5",
+			"s-maxage=1, stale-while-revalidate=5",
 		);
 
 		await writeToCache(request, response, config);
@@ -51,12 +51,12 @@ describe("Stale-While-Revalidate Support", () => {
 	});
 
 	it("should serve fresh content when not expired", async () => {
-		const writeConfig: CacheConfig = { cacheName: testCacheName };
+		const writeConfig: CacheConfig<Request, Response> = { cacheName: testCacheName };
 
 		const request = new Request("https://example.com/fresh");
 		const response = createTestResponse(
 			"fresh content",
-			"max-age=10, stale-while-revalidate=20",
+			"s-maxage=10, stale-while-revalidate=20",
 		);
 
 		// Cache the response
@@ -78,7 +78,7 @@ describe("Stale-While-Revalidate Support", () => {
 			return Promise.resolve(
 				createTestResponse(
 					"revalidated content",
-					"max-age=10, stale-while-revalidate=20",
+					"s-maxage=10, stale-while-revalidate=20",
 				),
 			);
 		});
@@ -96,17 +96,31 @@ describe("Stale-While-Revalidate Support", () => {
 		const request = new Request("https://example.com/stale");
 		const response = createTestResponse(
 			"original content",
-			"max-age=0.1, stale-while-revalidate=2",
+			"s-maxage=1, stale-while-revalidate=5",
 		);
+		Object.defineProperty(response, "url", {
+			value: "https://example.com/stale",
+			writable: false,
+		});
 
 		await writeToCache(request, response, { cacheName: testCacheName });
 
-		await wait(150); // allow to become stale inside SWR window
+		// Manually expire the cache entry by putting an expired one
+		const cache = await caches.open(testCacheName);
+		await cache.put(
+			request,
+			new Response("original content", {
+				headers: {
+					"cache-control": "s-maxage=1, stale-while-revalidate=5",
+					expires: new Date(Date.now() - 1000).toUTCString(),
+				},
+			}),
+		);
 
 		const staleResponse = await handle(request);
 		assertEquals(await staleResponse.text(), "original content");
 
-		await wait(10); // allow background task scheduling
+		await waitForNextTick();
 
 		assertEquals(
 			handler.calls.length,
@@ -125,19 +139,32 @@ describe("Stale-While-Revalidate Support", () => {
 	});
 
 	it("should return null when content is expired beyond SWR window", async () => {
-		const writeConfig: CacheConfig = { cacheName: testCacheName };
+		const writeConfig: CacheConfig<Request, Response> = { cacheName: testCacheName };
 
 		const request = new Request("https://example.com/expired");
 		const response = createTestResponse(
 			"expired content",
-			"max-age=0.1, stale-while-revalidate=0.1",
+			"s-maxage=1, stale-while-revalidate=2",
 		);
+		Object.defineProperty(response, "url", {
+			value: "https://example.com/expired",
+			writable: false,
+		});
 
 		// Cache the response
 		await writeToCache(request, response, writeConfig);
 
-		// Wait for content to expire beyond SWR window
-		await wait(250); // 250ms > 200ms (max-age + stale-while-revalidate)
+		// Manually put an expired entry that's beyond SWR window
+		const cache = await caches.open(testCacheName);
+		await cache.put(
+			request,
+			new Response("expired content", {
+				headers: {
+					"cache-control": "s-maxage=1, stale-while-revalidate=2",
+					expires: new Date(Date.now() - 5000).toUTCString(), // Expired 5 seconds ago, beyond SWR window
+				},
+			}),
+		);
 
 		// Read should return null
 		const { cached: expiredResponse } = await readFromCache(
@@ -152,7 +179,7 @@ describe("Stale-While-Revalidate Support", () => {
 	it("should fallback to queueMicrotask when waitUntil is not provided", async () => {
 		const handler = spy((_request: Request) => {
 			return Promise.resolve(
-				createTestResponse("revalidated content", "max-age=10"),
+				createTestResponse("revalidated content", "s-maxage=10"),
 			);
 		});
 
@@ -161,18 +188,32 @@ describe("Stale-While-Revalidate Support", () => {
 		const request = new Request("https://example.com/fallback");
 		const response = createTestResponse(
 			"original content",
-			"max-age=0.1, stale-while-revalidate=2",
+			"s-maxage=1, stale-while-revalidate=5",
 		);
+		Object.defineProperty(response, "url", {
+			value: "https://example.com/fallback",
+			writable: false,
+		});
 
 		await writeToCache(request, response, { cacheName: testCacheName });
 
-		await wait(150); // become stale
+		// Manually expire the entry
+		const cache = await caches.open(testCacheName);
+		await cache.put(
+			request,
+			new Response("original content", {
+				headers: {
+					"cache-control": "s-maxage=1, stale-while-revalidate=5",
+					expires: new Date(Date.now() - 1000).toUTCString(),
+				},
+			}),
+		);
 
 		const staleResponse = await handle(request);
 		assertExists(staleResponse);
 		assertEquals(await staleResponse.text(), "original content");
 
-		await wait(10); // allow microtask
+		await waitForNextTick();
 		assertEquals(
 			handler.calls.length,
 			1,
@@ -183,19 +224,32 @@ describe("Stale-While-Revalidate Support", () => {
 	});
 
 	it("should serve stale content without revalidation handler (no background work)", async () => {
-		const writeConfig: CacheConfig = { cacheName: testCacheName };
+		const writeConfig: CacheConfig<Request, Response> = { cacheName: testCacheName };
 
 		const request = new Request("https://example.com/no-handler");
 		const response = createTestResponse(
 			"content",
-			"max-age=0.1, stale-while-revalidate=2",
+			"s-maxage=1, stale-while-revalidate=5",
 		);
+		Object.defineProperty(response, "url", {
+			value: "https://example.com/no-handler",
+			writable: false,
+		});
 
 		// Cache the response
 		await writeToCache(request, response, writeConfig);
 
-		// Wait for content to become stale
-		await wait(150);
+		// Manually expire the entry
+		const cache = await caches.open(testCacheName);
+		await cache.put(
+			request,
+			new Response("content", {
+				headers: {
+					"cache-control": "s-maxage=1, stale-while-revalidate=5",
+					expires: new Date(Date.now() - 1000).toUTCString(),
+				},
+			}),
+		);
 
 		// Read should return stale content (library serves stale if within SWR window even without handler)
 		const { cached: result, needsBackgroundRevalidation } = await readFromCache(
@@ -203,7 +257,7 @@ describe("Stale-While-Revalidate Support", () => {
 			writeConfig,
 		);
 		assertExists(result);
-		assertEquals(needsBackgroundRevalidation, true);
+		assert(needsBackgroundRevalidation);
 		await result?.text();
 
 		await cleanup();
@@ -212,7 +266,7 @@ describe("Stale-While-Revalidate Support", () => {
 	it("should handle revalidation with CDN-Cache-Control header", async () => {
 		const handler = spy((_request: Request) => {
 			return Promise.resolve(
-				createTestResponse("revalidated content", "max-age=10"),
+				createTestResponse("revalidated content", "s-maxage=10"),
 			);
 		});
 		const runInBackground = spy((p: Promise<unknown>) => {
@@ -229,19 +283,36 @@ describe("Stale-While-Revalidate Support", () => {
 		const response = new Response("cdn content", {
 			headers: {
 				"content-type": "text/plain",
-				"cdn-cache-control": "max-age=0.1, stale-while-revalidate=2",
+				"cdn-cache-control": "max-age=0.1, stale-while-revalidate=10",
 			},
 		});
 
+		Object.defineProperty(response, "url", {
+			value: "https://example.com/cdn-cache",
+			writable: false,
+		});
+
 		await writeToCache(request, response, { cacheName: testCacheName });
-		await wait(150); // stale
+
+		// Manually expire the entry
+		const cache = await caches.open(testCacheName);
+		await cache.put(
+			request,
+			new Response("cdn content", {
+				headers: {
+					"content-type": "text/plain",
+					"cdn-cache-control": "max-age=1, stale-while-revalidate=10",
+					expires: new Date(Date.now() - 1000).toUTCString(),
+				},
+			}),
+		);
 
 		const staleResponse = await handle(request);
 		assertExists(staleResponse);
 		const body = await staleResponse.text();
 		assertEquals(["cdn content", "revalidated content"].includes(body), true);
 
-		await wait(10);
+		await waitForNextTick();
 		assertEquals(
 			handler.calls.length,
 			1,

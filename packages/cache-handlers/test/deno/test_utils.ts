@@ -3,14 +3,15 @@ export class FailingCache implements Cache {
 
 	match(_request: RequestInfo | URL): Promise<Response | undefined> {
 		if (this.errorOnMethod === "match") {
-			throw new Error("Cache match failed");
+			return Promise.reject(new Error("Cache match failed"));
 		}
+		// For metadata operations, return undefined (no existing metadata)
 		return Promise.resolve(undefined);
 	}
 
 	put(_request: RequestInfo | URL, _response: Response): Promise<void> {
 		if (this.errorOnMethod === "put") {
-			throw new Error("Cache put failed");
+			return Promise.reject(new Error("Cache put failed"));
 		}
 		return Promise.resolve();
 	}

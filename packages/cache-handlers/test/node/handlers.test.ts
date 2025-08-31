@@ -14,7 +14,7 @@ describe("Cache Handler - Node.js with undici", () => {
 		const handler = vi.fn((_req: Request) =>
 			new Response("fresh data", {
 				headers: {
-					"cache-control": "max-age=3600, stale-while-revalidate=60, public",
+					"cdn-cache-control": "max-age=3600, stale-while-revalidate=60, public",
 					"cache-tag": "user:123",
 					"content-type": "application/json",
 				},
@@ -23,8 +23,8 @@ describe("Cache Handler - Node.js with undici", () => {
 		const response = await handle(request, { handler });
 		expect(handler).toHaveBeenCalledTimes(1);
 		expect(await response.text()).toBe("fresh data");
-		// Headers cleaned
-		expect(response.headers.has("cache-tag")).toBe(false);
+		// Cache tags are preserved for clients
+		expect(response.headers.has("cache-tag")).toBe(true);
 		// Verify cached
 		const cache = await caches.open("test");
 		const cached = await cache.match("http://example.com/api/users");

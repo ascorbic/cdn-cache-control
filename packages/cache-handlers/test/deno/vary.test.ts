@@ -43,7 +43,7 @@ Deno.test("Vary - writeToCache/readFromCache integration", async () => {
 
 	const response = new Response("test data", {
 		headers: {
-			"cache-control": "max-age=3600, public",
+			"cache-control": "s-maxage=3600, public",
 			"cache-vary": "header=Accept-Language, cookie=user-role",
 		},
 	});

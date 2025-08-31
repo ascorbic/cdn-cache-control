@@ -125,24 +125,55 @@ export function parseResponseHeaders<TRequest, TResponse>(
 		? headers.get("cdn-cache-control")
 		: null;
 
-	const finalCacheControl = cdnCacheControlHeader || cacheControlHeader;
-
 	if (cdnCacheControlHeader) {
 		result.headersToRemove.push("cdn-cache-control");
 	}
 
-	if (finalCacheControl) {
-		const directives = parseCacheControl(finalCacheControl);
-		result.isPrivate = !!directives.private;
-		result.noCache = !!directives["no-cache"];
-		result.noStore = !!directives["no-store"];
+	// Parse cdn-cache-control first (if present)
+	if (cdnCacheControlHeader) {
+		const cdnDirectives = parseCacheControl(cdnCacheControlHeader);
+		result.isPrivate = !!cdnDirectives.private;
+		result.noCache = !!cdnDirectives["no-cache"];
+		result.noStore = !!cdnDirectives["no-store"];
 
-		if (typeof directives["max-age"] === "number") {
-			result.ttl = directives["max-age"];
+		// cdn-cache-control uses max-age
+		if (typeof cdnDirectives["max-age"] === "number") {
+			result.ttl = cdnDirectives["max-age"];
 		}
 
-		if (typeof directives["stale-while-revalidate"] === "number") {
+		if (typeof cdnDirectives["stale-while-revalidate"] === "number") {
+			result.staleWhileRevalidate = cdnDirectives["stale-while-revalidate"];
+		}
+	}
+
+	// Parse regular cache-control (fallback for properties not set by cdn-cache-control)
+	if (cacheControlHeader) {
+		const directives = parseCacheControl(cacheControlHeader);
+		
+		// Only use cache-control for properties not already set by cdn-cache-control
+		if (!cdnCacheControlHeader) {
+			result.isPrivate = !!directives.private;
+			result.noCache = !!directives["no-cache"];
+			result.noStore = !!directives["no-store"];
+		}
+
+		// cache-control only uses s-maxage for TTL (ignore max-age)
+		if (!result.ttl && typeof directives["s-maxage"] === "number") {
+			result.ttl = directives["s-maxage"];
+		}
+
+		if (!result.staleWhileRevalidate && typeof directives["stale-while-revalidate"] === "number") {
 			result.staleWhileRevalidate = directives["stale-while-revalidate"];
+		}
+
+		// Filter out used directives from cache-control
+		const filteredCacheControl = filterCacheControlDirectives(cacheControlHeader);
+		if (filteredCacheControl !== cacheControlHeader && filteredCacheControl.trim()) {
+			// Only modify cache-control if we have remaining directives
+			result.filteredCacheControl = filteredCacheControl;
+		} else if (filteredCacheControl !== cacheControlHeader) {
+			// If we filtered everything out, remove the header entirely
+			result.headersToRemove.push("cache-control");
 		}
 	}
 
@@ -150,7 +181,7 @@ export function parseResponseHeaders<TRequest, TResponse>(
 		const cacheTag = headers.get("cache-tag");
 		if (cacheTag) {
 			result.tags = parseCacheTags(cacheTag);
-			result.headersToRemove.push("cache-tag");
+			// Cache tags should be preserved for clients, not removed
 		}
 	}
 
@@ -188,7 +219,7 @@ export function parseResponseHeaders<TRequest, TResponse>(
 	}
 
 	// Cache only when explicitly allowed by headers (no implicit caching)
-	const hasExplicitCacheHeaders = !!finalCacheControl ||
+	const hasExplicitCacheHeaders = !!cacheControlHeader || !!cdnCacheControlHeader ||
 		!!headers.get("cache-tag") ||
 		!!headers.get("expires");
 	result.shouldCache = hasExplicitCacheHeaders &&
@@ -317,17 +348,59 @@ function getCookieValue(
 	return null;
 }
 
+/**
+ * Remove cache-control directives that were processed by cache-handlers
+ */
+export function filterCacheControlDirectives(
+	cacheControlValue: string,
+): string {
+	const directives = parseCacheControl(cacheControlValue);
+	
+	// Remove directives that cache-handlers processes
+	const usedDirectives = [
+		"s-maxage", // CDN-specific, we've processed it
+		"stale-while-revalidate" // Our SWR implementation
+	];
+
+	// Remove used directives
+	for (const directive of usedDirectives) {
+		delete directives[directive];
+	}
+
+	// Rebuild cache-control header from remaining directives
+	const remaining = Object.entries(directives)
+		.map(([key, value]) => {
+			if (value === true) {
+				return key;
+			}
+			return `${key}=${value}`;
+		})
+		.filter(Boolean);
+
+	return remaining.join(", ");
+}
+
 export function removeHeaders(
 	response: Response,
 	headersToRemove: string[],
+	filteredCacheControl?: string,
 ): Response {
-	if (headersToRemove.length === 0) {
+	if (headersToRemove.length === 0 && !filteredCacheControl) {
 		return response;
 	}
 
 	const newHeaders = new Headers(response.headers);
 	for (const headerName of headersToRemove) {
 		newHeaders.delete(headerName);
+	}
+
+	// Apply filtered cache-control if provided
+	if (filteredCacheControl !== undefined) {
+		if (filteredCacheControl.trim()) {
+			newHeaders.set("cache-control", filteredCacheControl);
+		} else {
+			newHeaders.delete("cache-control");
+		}
 	}
 
 	return new Response(response.body, {

@@ -166,7 +166,7 @@ describe("Conditional Requests - Node.js with undici", () => {
 				handler: () =>
 					new Response("etag me", {
 						headers: {
-							"cache-control": "max-age=3600, public",
+							"cdn-cache-control": "max-age=3600, public",
 							"content-type": "application/json",
 						},
 					}),

@@ -1,4 +1,4 @@
-import { assertEquals, assertExists } from "jsr:@std/assert";
+import { assert, assertEquals, assertExists } from "jsr:@std/assert";
 import { createCacheHandler } from "../../src/handlers.ts";
 import { assertSpyCalls, spy } from "jsr:@std/testing/mock";
 
@@ -13,7 +13,7 @@ Deno.test("cache miss invokes handler and caches response", async () => {
 		Promise.resolve(
 			new Response("fresh", {
 				headers: {
-					"cache-control": "max-age=3600, public",
+					"cdn-cache-control": "max-age=3600, public",
 					"cache-tag": "user:123",
 					"content-type": "application/json",
 				},
@@ -38,7 +38,7 @@ Deno.test("cache hit returns cached without invoking handler", async () => {
 	const prime = spy(() =>
 		Promise.resolve(
 			new Response("value", {
-				headers: { "cache-control": "max-age=3600, public" },
+				headers: { "cdn-cache-control": "max-age=3600, public" },
 			}),
 		)
 	);
@@ -67,7 +67,7 @@ Deno.test("expired cached entry is ignored and handler re-invoked", async () => 
 	const handler = spy(() =>
 		Promise.resolve(
 			new Response("new", {
-				headers: { "cache-control": "max-age=60, public" },
+				headers: { "cdn-cache-control": "max-age=60, public" },
 			}),
 		)
 	);
@@ -104,7 +104,7 @@ Deno.test("second call after cacheable response strips cache-tag header from ret
 		Promise.resolve(
 			new Response("body", {
 				headers: {
-					"cache-control": "max-age=3600, public",
+					"cdn-cache-control": "max-age=3600, public",
 					"cache-tag": "user:1",
 				},
 			}),
@@ -112,8 +112,8 @@ Deno.test("second call after cacheable response strips cache-tag header from ret
 	);
 	const first = await handle(new Request(url), { handler: prime });
 	assertSpyCalls(prime, 1);
-	// Returned response should not expose cache-tag header (implementation strips during write)
-	assertEquals(first.headers.has("cache-tag"), false);
+	// Cache tags are preserved for clients
+	assert(first.headers.has("cache-tag"));
 	const miss = spy(() => Promise.resolve(new Response("should-not")));
 	const second = await handle(new Request(url), { handler: miss });
 	assertSpyCalls(miss, 0);
@@ -129,7 +129,7 @@ Deno.test("cached response served instead of invoking handler (middleware analog
 	const prime = spy(() =>
 		Promise.resolve(
 			new Response("prime", {
-				headers: { "cache-control": "max-age=120, public" },
+				headers: { "cdn-cache-control": "max-age=120, public" },
 			}),
 		)
 	);
