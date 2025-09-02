@@ -62,11 +62,24 @@ export async function readFromCache(
 			const now = Date.now();
 			if (!isNaN(expiresAt) && now >= expiresAt) {
 				let swrSeconds: number | undefined;
-				const cc = cachedResponse.headers.get("cache-control");
-				if (cc) {
-					const directives = parseCacheControl(cc);
-					if (typeof directives["stale-while-revalidate"] === "number") {
-						swrSeconds = directives["stale-while-revalidate"] as number;
+				
+				// Check cdn-cache-control first (takes precedence)
+				const cdnCc = cachedResponse.headers.get("cdn-cache-control");
+				if (cdnCc) {
+					const cdnDirectives = parseCacheControl(cdnCc);
+					if (typeof cdnDirectives["stale-while-revalidate"] === "number") {
+						swrSeconds = cdnDirectives["stale-while-revalidate"] as number;
+					}
+				}
+				
+				// Fallback to regular cache-control if not found in cdn-cache-control
+				if (swrSeconds === undefined) {
+					const cc = cachedResponse.headers.get("cache-control");
+					if (cc) {
+						const directives = parseCacheControl(cc);
+						if (typeof directives["stale-while-revalidate"] === "number") {
+							swrSeconds = directives["stale-while-revalidate"] as number;
+						}
 					}
 				}
 				if (swrSeconds && now < expiresAt + swrSeconds * 1000) {

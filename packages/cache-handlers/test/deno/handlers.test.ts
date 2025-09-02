@@ -2,7 +2,6 @@ import { assert, assertEquals, assertExists } from "jsr:@std/assert";
 import { createCacheHandler } from "../../src/handlers.ts";
 import { assertSpyCalls, spy } from "jsr:@std/testing/mock";
 
-// Unified handler tests replacing legacy read/write/middleware handlers
 
 Deno.test("cache miss invokes handler and caches response", async () => {
 	await caches.delete("test-miss");

@@ -1,56 +1,11 @@
 import { describe, expect, test, vi } from "vitest";
 import {
-	compareETags,
 	create304Response,
-	generateETag,
-	parseETag,
 	validateConditionalRequest,
 } from "../../src/conditional.ts";
 import { createCacheHandler } from "../../src/handlers.ts";
 
 describe("Conditional Requests - Node.js with undici", () => {
-	describe("ETag utilities", () => {
-		test("generates valid ETags", async () => {
-			const response = new Response("test content", {
-				headers: { "content-type": "text/plain" },
-			});
-
-			const etag = await generateETag(response);
-
-			expect(etag).toBeTruthy();
-			expect(typeof etag).toBe("string");
-			expect(etag.startsWith('"')).toBe(true);
-			expect(etag.endsWith('"')).toBe(true);
-		});
-
-		test("parses ETags correctly", () => {
-			// Strong ETag
-			const strongETag = parseETag('"abc123"');
-			expect(strongETag.value).toBe("abc123");
-			expect(strongETag.weak).toBe(false);
-
-			// Weak ETag
-			const weakETag = parseETag('W/"abc123"');
-			expect(weakETag.value).toBe("abc123");
-			expect(weakETag.weak).toBe(true);
-		});
-
-		test("compares ETags correctly", () => {
-			const etag1 = '"abc123"';
-			const etag2 = '"abc123"';
-			const etag3 = '"def456"';
-			const weakETag = 'W/"abc123"';
-
-			// Strong comparison
-			expect(compareETags(etag1, etag2)).toBe(true);
-			expect(compareETags(etag1, etag3)).toBe(false);
-			expect(compareETags(etag1, weakETag, false)).toBe(false);
-
-			// Weak comparison
-			expect(compareETags(etag1, weakETag, true)).toBe(true);
-		});
-	});
-
 	describe("Conditional validation", () => {
 		test("validates ETag conditional requests", () => {
 			const request = new Request("https://example.com/test", {

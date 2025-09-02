@@ -7,6 +7,7 @@ import {
 	parseResponseHeaders,
 } from "../../src/utils.ts";
 import { invalidateByTag } from "../../src/invalidation.ts";
+import { createCacheHandler } from "../../src/handlers.ts";
 
 Deno.test("Security - Header injection via cache tags", () => {
 	// Test that cache tags with newlines/CRLF are properly handled
@@ -59,7 +60,7 @@ Deno.test("Security - Cache pollution via tag injection", async () => {
 	// Simple test: just verify that malicious tags don't cause prototype pollution
 	const maliciousResponse = new Response("data", {
 		headers: {
-			"cache-control": "max-age=3600, public",
+			"cache-control": "s-maxage=3600, public",
 			"cache-tag": "user:123, __proto__:polluted, admin:true",
 		},
 	});
@@ -103,7 +104,7 @@ Deno.test("Security - Cache key collision attack", () => {
 		query: [],
 	});
 
-	// Document the actual behaviour - collision vulnerability is now fixed with :: separators
+	// Keys use :: separators to prevent collisions
 	assertEquals(key1, "https://example.com/api/users|admin:true");
 	assertEquals(key2, "https://example.com/api/users::h=admin:true");
 
@@ -131,7 +132,7 @@ Deno.test("Security - Metadata size bomb", async () => {
 	const hugeTags = Array.from({ length: 101 }, (_, i) => `tag:${i}`);
 	const response = new Response("test data", {
 		headers: {
-			"cache-control": "max-age=3600, public",
+			"cache-control": "s-maxage=3600, public",
 			"cache-tag": hugeTags.join(", "),
 		},
 	});
@@ -157,4 +158,89 @@ Deno.test("Security - Metadata size bomb", async () => {
 		);
 	}
 	await caches.delete("test");
+});
+
+Deno.test("Security - Integration: cache tags work correctly for invalidation", async () => {
+	await caches.delete("security-integration");
+	const handle = createCacheHandler({
+		cacheName: "security-integration",
+	});
+	
+	// Test that cache-tag headers enable proper cache invalidation
+	const response = new Response("tagged content", {
+		headers: {
+			"cache-control": "s-maxage=3600, public",
+			"cache-tag": "user:123, sensitive:data",
+			"content-type": "application/json",
+		},
+	});
+	Object.defineProperty(response, "url", {
+		value: "https://example.com/api/secure",
+		writable: false,
+	});
+	
+	const request = new Request("https://example.com/api/secure");
+	const result = await handle(request, {
+		handler: () => Promise.resolve(response),
+	});
+	
+	// Verify response is cached and tags are preserved
+	assertEquals(await result.text(), "tagged content");
+	assertEquals(result.headers.get("content-type"), "application/json");
+	assertEquals(result.headers.get("cache-tag"), "user:123, sensitive:data");
+	
+	// Verify content is cached
+	const cache = await caches.open("security-integration");
+	const cached = await cache.match(request);
+	assertEquals(cached !== undefined, true);
+	if (cached) {
+		await cached.text(); // Clean up the resource
+	}
+	
+	// Verify invalidation by tag works
+	const deletedCount = await invalidateByTag("user:123", { cacheName: "security-integration" });
+	assertEquals(deletedCount, 1);
+	
+	// Verify content is gone after invalidation
+	const afterInvalidation = await cache.match(request);
+	assertEquals(afterInvalidation, undefined);
+	
+	await caches.delete("security-integration");
+});
+
+Deno.test("Security - Integration: CDN cache control prevents cache poisoning", async () => {
+	await caches.delete("security-cdn");
+	const handle = createCacheHandler({
+		cacheName: "security-cdn",
+	});
+	
+	// Simulate response with cdn-cache-control that should override regular cache-control
+	const response = new Response("sensitive data", {
+		headers: {
+			"cache-control": "s-maxage=86400, public", // Long cache
+			"cdn-cache-control": "private, no-cache", // Should prevent caching
+			"content-type": "application/json",
+		},
+	});
+	Object.defineProperty(response, "url", {
+		value: "https://example.com/api/sensitive",
+		writable: false,
+	});
+	
+	const request = new Request("https://example.com/api/sensitive");
+	const result = await handle(request, {
+		handler: () => Promise.resolve(response),
+	});
+	
+	// Verify response is served
+	assertEquals(await result.text(), "sensitive data");
+	// Verify cdn-cache-control header is filtered from response
+	assertEquals(result.headers.get("cdn-cache-control"), null);
+	
+	// Verify content was not cached due to cdn-cache-control: private
+	const cache = await caches.open("security-cdn");
+	const cached = await cache.match(request);
+	assertEquals(cached, undefined);
+	
+	await caches.delete("security-cdn");
 });

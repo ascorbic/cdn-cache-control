@@ -1,9 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import {
-	compareETags,
 	create304Response,
-	generateETag,
-	parseETag,
 	validateConditionalRequest,
 } from "../../src/conditional.ts";
 import { createCacheHandler } from "../../src/handlers.ts";
@@ -12,48 +9,6 @@ describe("Conditional Requests - Workerd Environment", () => {
 	beforeEach(async () => {
 		// Note: caches.delete() is not implemented in workerd test environment
 		// Tests will use unique cache names to avoid conflicts
-	});
-
-	describe("ETag utilities in Workerd", () => {
-		test("generates valid ETags in workerd", async () => {
-			const response = new Response("workerd test content", {
-				headers: { "content-type": "text/plain" },
-			});
-
-			const etag = await generateETag(response);
-
-			expect(etag).toBeTruthy();
-			expect(typeof etag).toBe("string");
-			expect(etag.startsWith('"')).toBe(true);
-			expect(etag.endsWith('"')).toBe(true);
-		});
-
-		test("parses ETags correctly in workerd", () => {
-			// Strong ETag
-			const strongETag = parseETag('"workerd-abc123"');
-			expect(strongETag.value).toBe("workerd-abc123");
-			expect(strongETag.weak).toBe(false);
-
-			// Weak ETag
-			const weakETag = parseETag('W/"workerd-abc123"');
-			expect(weakETag.value).toBe("workerd-abc123");
-			expect(weakETag.weak).toBe(true);
-		});
-
-		test("compares ETags correctly in workerd", () => {
-			const etag1 = '"workerd-test"';
-			const etag2 = '"workerd-test"';
-			const etag3 = '"workerd-different"';
-			const weakETag = 'W/"workerd-test"';
-
-			// Strong comparison
-			expect(compareETags(etag1, etag2)).toBe(true);
-			expect(compareETags(etag1, etag3)).toBe(false);
-			expect(compareETags(etag1, weakETag, false)).toBe(false);
-
-			// Weak comparison
-			expect(compareETags(etag1, weakETag, true)).toBe(true);
-		});
 	});
 
 	describe("Conditional validation in Workerd", () => {

@@ -68,7 +68,7 @@ describe("TTL Normalization", () => {
 		expect(handler).toHaveBeenCalledTimes(1);
 		expect(await response.text()).toBe("cdn-max-age data");
 		expect(response.headers.has("cache-tag")).toBe(true);
-		expect(response.headers.has("cdn-cache-control")).toBe(false); // Should be removed
+		expect(response.headers.has("cdn-cache-control")).toBe(false); // CDN headers filtered from response
 
 		// Second request should be cached
 		const cachedResponse = await handle(request, { handler });
@@ -111,10 +111,10 @@ describe("TTL Normalization", () => {
 
 		const response = await handle(request, { handler });
 		
-		// Check that used directives are removed but others remain
+		// Check that CDN directives are filtered but browser directives remain
 		const cacheControl = response.headers.get("cache-control");
-		expect(cacheControl).not.toContain("s-maxage"); // Should be removed
-		expect(cacheControl).not.toContain("stale-while-revalidate"); // Should be removed
+		expect(cacheControl).not.toContain("s-maxage"); // CDN directive filtered out
+		expect(cacheControl).not.toContain("stale-while-revalidate"); // CDN directive filtered out
 		expect(cacheControl).toContain("max-age=7200"); // Should remain (for browsers)
 		expect(cacheControl).toContain("public"); // Should remain
 	});
