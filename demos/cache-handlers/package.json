@@ -1,0 +1,25 @@
+{
+	"name": "@demo/cache-handlers",
+	"private": true,
+	"type": "module",
+	"version": "0.0.1",
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build",
+		"preview": "wrangler dev",
+		"preview:local": "wrangler dev --local",
+		"deploy": "astro build && wrangler deploy",
+		"wrangler": "wrangler",
+		"types": "wrangler types",
+		"astro": "astro"
+	},
+	"dependencies": {
+		"astro": "^5.12.9",
+		"@astrojs/cloudflare": "^12.6.0",
+		"cache-handlers": "workspace:*",
+		"@cloudflare/workers-types": "^4.20250204.0"
+	},
+	"devDependencies": {
+		"wrangler": "^4.32.0"
+	}
+}
